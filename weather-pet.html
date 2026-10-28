@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>반다이 디지몬 다마고치 (Bandai Digimon Weather Tamagotchi)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (DungGeunMo Retro Font) -->
+    <link href="https://fonts.googleapis.com/css2?family=DungGeunMo&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'DungGeunMo', monospace;
+            background: #12131a;
+            touch-action: manipulation;
+            image-rendering: pixelated;
+        }
+
+        /* 2000s Bandai Digimon Brick / Frame Theme */
+        .digimon-case {
+            background: linear-gradient(145deg, #2b303a 0%, #1a1d24 100%);
+            border: 6px solid #4a5162;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.8), inset 0 2px 5px rgba(255,255,255,0.2);
+            position: relative;
+        }
+
+        /* LCD Screen Retro Retro Yellowish Grid Feel (Bandai Classic) */
+        .lcd-screen {
+            background: #a3b899; /* Classic Digimon LCD Greenish-Yellow */
+            box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+            border: 5px solid #22252c;
+        }
+
+        /* Scanline Overlay for Nostalgic CRT/LCD Look */
+        .lcd-screen::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px;
+            z-index: 18;
+            pointer-events: none;
+        }
+
+        /* Weather Visual Styles for Pixel LCD */
+        .weather-rain { background: #819885 !important; }
+        .weather-snow { background: #b8ccb0 !important; }
+        .weather-wind { background: #8e9e80 !important; }
+
+        /* Screen Shake Animation (Heavy Wind) */
+        @keyframes digimonWindShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-5px, 4px) rotate(-1deg); }
+            40% { transform: translate(5px, -4px) rotate(1deg); }
+            60% { transform: translate(-4px, -3px) rotate(-1deg); }
+            80% { transform: translate(4px, 3px) rotate(1deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .screen-shake {
+            animation: digimonWindShake 0.25s infinite ease-in-out;
+        }
+
+        /* Pixel Egg Shake */
+        @keyframes eggWobble {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-8deg) scale(1.05); }
+            75% { transform: rotate(8deg) scale(1.05); }
+        }
+        .egg-anim {
+            animation: eggWobble 1.2s infinite ease-in-out;
+        }
+
+        /* Digimon Pixel Bounce Animations */
+        @keyframes digimonIdle {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        @keyframes digimonStruggle {
+            0%, 100% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+        }
+
+        .digimon-idle { animation: digimonIdle 1s steps(2, end) infinite; }
+        .digimon-wind { animation: digimonStruggle 0.2s steps(2, end) infinite; }
+
+        /* Floating Hearts / Effects */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+        .pop-effect {
+            position: absolute;
+            animation: floatUp 0.8s ease-out forwards;
+            pointer-events: none;
+            z-index: 25;
+            font-weight: bold;
+        }
+
+        /* Digimon Retro Buttons (Yellow / White Classic 3-Button Look) */
+        .digimon-btn {
+            background: linear-gradient(180deg, #ffd166 0%, #f7b267 100%);
+            box-shadow: 0 4px 0 #b37400, 0 6px 8px rgba(0,0,0,0.4);
+            border: 2px solid #543900;
+            color: #3d2400;
+        }
+        .digimon-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #b37400, 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .digimon-btn-gray {
+            background: linear-gradient(180deg, #e0e6ed 0%, #cbd5e1 100%);
+            box-shadow: 0 4px 0 #64748b, 0 6px 8px rgba(0,0,0,0.4);
+            border: 2px solid #334155;
+            color: #0f172a;
+        }
+        .digimon-btn-gray:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #64748b, 0 2px 4px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 text-gray-900 select-none">
+
+    <div class="w-full max-w-sm mx-auto">
+        
+        <!-- Header Info / KMA Status -->
+        <div class="flex justify-between items-center mb-2 text-white text-xs px-2 font-bold">
+            <div class="flex items-center gap-1.5">
+                <span id="location-display" class="bg-gray-800 border border-gray-600 px-2 py-0.5 rounded text-yellow-400">
+                    <i class="fa-solid fa-location-dot"></i> <span id="city-name">제주</span>
+                </span>
+                <span id="weather-badge" class="bg-gray-800 text-gray-300 px-2 py-0.5 rounded border border-gray-600">
+                    <span id="weather-desc">기상청 맑음</span>
+                </span>
+            </div>
+            <div class="flex gap-1">
+                <button onclick="fetchKmaWeather()" class="bg-yellow-600 hover:bg-yellow-500 text-black font-extrabold px-2 py-0.5 rounded text-[11px] transition">
+                    <i class="fa-solid fa-rotate"></i> 동기화
+                </button>
+                <button onclick="toggleModal('api-modal')" class="bg-gray-700 text-gray-300 px-2 py-0.5 rounded text-[11px]">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- BANDAI DIGIMON TAMAGOTCHI FRAME -->
+        <div class="digimon-case rounded-[35px] p-5 sm:p-6 border-4 border-gray-700 shadow-2xl relative">
+            
+            <!-- Bandai Digimon Logo Badge -->
+            <div class="text-center mb-2">
+                <span class="text-xs font-black tracking-widest text-amber-400 bg-gray-900 border border-amber-500/50 px-3 py-0.5 rounded-full shadow-inner">
+                    DIGITAL MONSTER 2000
+                </span>
+            </div>
+
+            <!-- DIGITAL MONSTER LCD SCREEN CONTAINER -->
+            <div id="lcd-screen" class="lcd-screen rounded-xl h-64 relative flex flex-col justify-between items-center p-2.5">
+                
+                <!-- Weather Overlay Canvas (Rain/Snow) -->
+                <canvas id="weather-canvas" class="absolute inset-0 w-full h-full pointer-events-none z-10"></canvas>
+
+                <!-- Egg Countdown / Status Banner -->
+                <div id="status-banner" class="z-20 w-full bg-gray-900/80 text-amber-300 text-[11px] px-2 py-1 rounded border border-amber-500/40 text-center font-bold flex justify-between items-center">
+                    <span id="banner-text">🥚 디지몬 알 관찰 중...</span>
+                    <span id="hatch-timer" class="text-red-400 font-extrabold">60초</span>
+                </div>
+
+                <!-- Speech / Pixel Message Box -->
+                <div id="speech-bubble" class="z-20 bg-gray-900 border-2 border-gray-700 text-amber-300 rounded px-2.5 py-1 text-xs font-bold text-center mt-1 max-w-[95%] shadow">
+                    <span id="speech-text">알이 흔들리고 있다냥! 1분 뒤 부화해!</span>
+                </div>
+
+                <!-- Poop Layer -->
+                <div id="poop-layer" class="absolute bottom-6 left-3 z-20 text-xl hidden">
+                    💩
+                </div>
+
+                <!-- MAIN DIGIMON DISPLAY AREA -->
+                <div id="pet-container" class="relative z-20 my-auto flex flex-col items-center justify-center">
+                    
+                    <!-- Digimon Display Visual (Dynamic SVG / Egg vs Hatched) -->
+                    <div id="pet-body" class="egg-anim transition-transform duration-200">
+                        <!-- Default Egg SVG -->
+                        <svg id="digimon-svg" width="85" height="85" viewBox="0 0 100 100">
+                            <!-- Digimon Egg Base -->
+                            <ellipse cx="50" cy="55" rx="30" ry="38" fill="#e2e8f0" stroke="#1e293b" stroke-width="6"/>
+                            <!-- Egg Pattern Marks -->
+                            <path d="M 32 40 Q 50 25 68 40" fill="none" stroke="#2563eb" stroke-width="6" stroke-dasharray="4 4"/>
+                            <circle cx="40" cy="65" r="5" fill="#dc2626"/>
+                            <circle cx="62" cy="60" r="4" fill="#16a34a"/>
+                        </svg>
+                    </div>
+
+                    <!-- Friend Pet (Appears on 'Friend' Action) -->
+                    <div id="friend-pet" class="hidden absolute left-14 top-1 text-3xl animate-bounce">
+                        👾
+                    </div>
+                </div>
+
+                <!-- Bottom LCD Status Bar -->
+                <div class="w-full flex justify-between items-center text-[10px] text-gray-900 font-black z-20 bg-amber-200/50 px-2 py-0.5 rounded">
+                    <span id="temp-display">온도: --°C</span>
+                    <span id="digimon-name-display" class="font-bold text-blue-900">알 (Digitama)</span>
+                    <span id="wind-display">바람: --m/s</span>
+                </div>
+            </div>
+
+            <!-- DIGIMON STATS MINI PANEL -->
+            <div class="mt-3 bg-gray-900/90 border-2 border-gray-700 rounded-lg p-2 text-white text-[11px] grid grid-cols-2 gap-x-2 gap-y-1">
+                <div>
+                    <div class="flex justify-between text-amber-400 font-bold mb-0.5">
+                        <span><i class="fa-solid fa-drumstick-bite"></i> 포만감</span>
+                        <span id="stat-hunger-num">80%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                        <div id="stat-hunger" class="bg-amber-500 h-full" style="width: 80%;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-pink-400 font-bold mb-0.5">
+                        <span><i class="fa-solid fa-heart"></i> 행복도</span>
+                        <span id="stat-happy-num">80%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                        <div id="stat-happy" class="bg-pink-500 h-full" style="width: 80%;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-teal-400 font-bold mb-0.5">
+                        <span><i class="fa-solid fa-soap"></i> 청결도</span>
+                        <span id="stat-clean-num">100%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                        <div id="stat-clean" class="bg-teal-400 h-full" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-indigo-400 font-bold mb-0.5">
+                        <span><i class="fa-solid fa-brain"></i> 지 능</span>
+                        <span id="stat-know-num">50%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden border border-gray-700">
+                        <div id="stat-know" class="bg-indigo-400 h-full" style="width: 50%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLASSIC BANDAI 5 CORE ACTION BUTTONS -->
+            <div class="mt-3 grid grid-cols-5 gap-1.5">
+                <button onclick="handleAction('feed')" class="digimon-btn rounded-xl py-2 flex flex-col items-center justify-center font-black text-xs">
+                    <span class="text-base">🍖</span>
+                    <span class="text-[10px]">고기주기</span>
+                </button>
+
+                <button onclick="handleAction('pet')" class="digimon-btn rounded-xl py-2 flex flex-col items-center justify-center font-black text-xs">
+                    <span class="text-base">🖐️</span>
+                    <span class="text-[10px]">쓰다듬기</span>
+                </button>
+
+                <button onclick="handleAction('clean')" class="digimon-btn-gray rounded-xl py-2 flex flex-col items-center justify-center font-black text-xs">
+                    <span class="text-base">🧹</span>
+                    <span class="text-[10px]">청소하기</span>
+                </button>
+
+                <button onclick="handleAction('study')" class="digimon-btn-gray rounded-xl py-2 flex flex-col items-center justify-center font-black text-xs">
+                    <span class="text-base">🎓</span>
+                    <span class="text-[10px]">훈련하기</span>
+                </button>
+
+                <button onclick="handleAction('friend')" class="digimon-btn rounded-xl py-2 flex flex-col items-center justify-center font-black text-xs">
+                    <span class="text-base">⚔️</span>
+                    <span class="text-[10px]">배틀/친구</span>
+                </button>
+            </div>
+
+            <!-- WEATHER MANUAL TEST BAR -->
+            <div class="mt-3 pt-2 border-t border-gray-700 text-center">
+                <span class="text-[10px] text-gray-400 font-bold block mb-1">⚡ 기상청 날씨 테스트</span>
+                <div class="flex justify-center gap-1">
+                    <button onclick="setManualWeather('clear')" class="bg-yellow-800/80 hover:bg-yellow-700 text-yellow-200 px-2 py-0.5 rounded text-[10px] font-bold">☀️ 맑음</button>
+                    <button onclick="setManualWeather('rain')" class="bg-blue-900/80 hover:bg-blue-800 text-blue-200 px-2 py-0.5 rounded text-[10px] font-bold">🌧️ 비</button>
+                    <button onclick="setManualWeather('wind')" class="bg-teal-900/80 hover:bg-teal-800 text-teal-200 px-2 py-0.5 rounded text-[10px] font-bold">💨 강풍</button>
+                    <button onclick="setManualWeather('snow')" class="bg-gray-800 hover:bg-gray-700 text-gray-200 px-2 py-0.5 rounded text-[10px] font-bold">❄️ 눈</button>
+                </div>
+            </div>
+
+        </div>
+
+        <p class="text-center text-gray-500 text-[11px] mt-3">
+            BANDAI Digital Monster Theme x KMA Open API
+        </p>
+    </div>
+
+    <!-- API KEY & CITY MODAL -->
+    <div id="api-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-900 text-white rounded-xl max-w-sm w-full p-5 border-2 border-gray-700 shadow-2xl">
+            <h3 class="text-sm font-bold text-yellow-400 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-cloud-sun"></i> 기상청 API 위치 설정
+            </h3>
+            <p class="text-xs text-gray-400 mb-3">
+                기상청 초단기실황 API 격자 좌표 자동 동기화 설정입니다.
+            </p>
+
+            <div class="space-y-3 text-xs font-bold">
+                <div>
+                    <label class="block text-gray-300 mb-1">지역 선택:</label>
+                    <select id="select-city" class="w-full bg-gray-800 text-white border border-gray-700 rounded px-2 py-1.5 outline-none">
+                        <option value="jeju" selected>제주특별자치도 (제주시)</option>
+                        <option value="seoul">서울특별시 (시청)</option>
+                        <option value="busan">부산광역시</option>
+                        <option value="incheon">인천광역시</option>
+                        <option value="daegu">대구광역시</option>
+                        <option value="daejeon">대전광역시</option>
+                        <option value="gwangju">광주광역시</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-300 mb-1">공공데이터포털 서비스 Key:</label>
+                    <input id="input-key" type="password" value="" class="w-full bg-gray-800 text-white border border-gray-700 rounded px-2 py-1.5 outline-none">
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end gap-2 text-xs">
+                <button onclick="toggleModal('api-modal')" class="bg-gray-800 text-gray-300 px-3 py-1.5 rounded font-bold">취소</button>
+                <button onclick="saveWeatherConfig()" class="bg-yellow-600 text-black px-4 py-1.5 rounded font-bold">저장 및 동기화</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT GAME & DIGIMON LOGIC -->
+    <script>
+        // Preset City Coordinates
+        const CITIES = {
+            jeju: { name: "제주", nx: 52, ny: 38 },
+            seoul: { name: "서울", nx: 60, ny: 127 },
+            busan: { name: "부산", nx: 98, ny: 76 },
+            incheon: { name: "인천", nx: 55, ny: 124 },
+            daegu: { name: "대구", nx: 89, ny: 90 },
+            daejeon: { name: "대전", nx: 67, ny: 100 },
+            gwangju: { name: "광주", nx: 58, ny: 74 }
+        };
+
+        // Random 5 Digimon Pool
+        const DIGIMON_SPECIES = [
+            {
+                id: 'agumon',
+                name: '아구몬 (Agumon)',
+                speech: '태일아! 나 부화했어! 🦖',
+                svg: `<svg width="85" height="85" viewBox="0 0 100 100">
+                    <path d="M 25 65 Q 20 88 40 88 L 60 88 Q 80 88 75 65 Q 85 30 50 30 Q 15 30 25 65 Z" fill="#f59e0b" stroke="#78350f" stroke-width="5"/>
+                    <polygon points="35,30 40,20 48,28" fill="#f59e0b" stroke="#78350f" stroke-width="3"/>
+                    <polygon points="65,30 60,20 52,28" fill="#f59e0b" stroke="#78350f" stroke-width="3"/>
+                    <circle cx="38" cy="48" r="5" fill="#1e293b"/><circle cx="62" cy="48" r="5" fill="#1e293b"/>
+                    <path d="M 40 60 Q 50 72 60 60" fill="none" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+                </svg>`
+            },
+            {
+                id: 'gabumon',
+                name: '파피몬 (Gabumon)',
+                speech: '뿔로 세상을 지킬 거야! 🐺',
+                svg: `<svg width="85" height="85" viewBox="0 0 100 100">
+                    <path d="M 25 65 Q 20 88 40 88 L 60 88 Q 80 88 75 65 Q 85 30 50 30 Q 15 30 25 65 Z" fill="#93c5fd" stroke="#1e3a8a" stroke-width="5"/>
+                    <polygon points="50,28 44,5 56,5" fill="#facc15" stroke="#713f12" stroke-width="4"/>
+                    <circle cx="38" cy="48" r="5" fill="#1e293b"/><circle cx="62" cy="48" r="5" fill="#1e293b"/>
+                    <path d="M 42 62 Q 50 56 58 62" fill="none" stroke="#1e3a8a" stroke-width="4"/>
+                </svg>`
+            },
+            {
+                id: 'patamon',
+                name: '파닥몬 (Patamon)',
+                speech: '파닥파닥~ 날아오를 거야! 🦇',
+                svg: `<svg width="85" height="85" viewBox="0 0 100 100">
+                    <ellipse cx="50" cy="60" rx="30" ry="24" fill="#fb923c" stroke="#7c2d12" stroke-width="5"/>
+                    <path d="M 20 50 Q 0 30 25 38 Z" fill="#fdba74" stroke="#7c2d12" stroke-width="4"/>
+                    <path d="M 80 50 Q 100 30 75 38 Z" fill="#fdba74" stroke="#7c2d12" stroke-width="4"/>
+                    <circle cx="40" cy="58" r="4" fill="#1e293b"/><circle cx="60" cy="58" r="4" fill="#1e293b"/>
+                    <path d="M 45 66 Q 50 70 55 66" fill="none" stroke="#7c2d12" stroke-width="3"/>
+                </svg>`
+            },
+            {
+                id: 'tentomon',
+                name: '텐타몬 (Tentomon)',
+                speech: '지식이 쑥쑥 자라난다 안카나! 🐞',
+                svg: `<svg width="85" height="85" viewBox="0 0 100 100">
+                    <circle cx="50" cy="58" r="28" fill="#ef4444" stroke="#7f1d1d" stroke-width="5"/>
+                    <line x1="25" y1="35" x2="15" y2="20" stroke="#7f1d1d" stroke-width="4"/>
+                    <line x1="75" y1="35" x2="85" y2="20" stroke="#7f1d1d" stroke-width="4"/>
+                    <circle cx="38" cy="52" r="6" fill="#facc15" stroke="#78350f" stroke-width="2"/>
+                    <circle cx="62" cy="52" r="6" fill="#facc15" stroke="#78350f" stroke-width="2"/>
+                </svg>`
+            },
+            {
+                id: 'gomamon',
+                name: '쉬라몬 (Gomamon)',
+                speech: '바다의 파도를 타고 부화했어! 🦭',
+                svg: `<svg width="85" height="85" viewBox="0 0 100 100">
+                    <ellipse cx="50" cy="58" rx="32" ry="26" fill="#f8fafc" stroke="#334155" stroke-width="5"/>
+                    <path d="M 46 32 L 50 15 L 54 32 Z" fill="#f97316" stroke="#7c2d12" stroke-width="3"/>
+                    <circle cx="38" cy="54" r="4" fill="#1e293b"/><circle cx="62" cy="54" r="4" fill="#1e293b"/>
+                    <path d="M 44 64 Q 50 68 56 64" fill="none" stroke="#334155" stroke-width="3"/>
+                </svg>`
+            }
+        ];
+
+        // --- State Management ---
+        const state = {
+            isHatched: false,
+            hatchSecondsLeft: 60,
+            activeDigimon: null,
+            hunger: 80,
+            happy: 80,
+            clean: 100,
+            know: 50,
+            poopCount: 0,
+            weather: 'clear',
+            windSpeed: 2.5,
+            temp: 22,
+            selectedCityKey: 'jeju',
+            apiKey: '',
+            isBusy: false
+        };
+
+        // --- DOM Elements ---
+        const lcdScreen = document.getElementById('lcd-screen');
+        const petBody = document.getElementById('pet-body');
+        const speechText = document.getElementById('speech-text');
+        const hatchTimer = document.getElementById('hatch-timer');
+        const bannerText = document.getElementById('banner-text');
+        const nameDisplay = document.getElementById('digimon-name-display');
+        const poopLayer = document.getElementById('poop-layer');
+        const friendPet = document.getElementById('friend-pet');
+        const canvas = document.getElementById('weather-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let animFrameId = null;
+
+        function resizeCanvas() {
+            canvas.width = lcdScreen.clientWidth;
+            canvas.height = lcdScreen.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 1-Min Egg Hatch Timer System
+        const hatchInterval = setInterval(() => {
+            if (!state.isHatched) {
+                state.hatchSecondsLeft--;
+                hatchTimer.innerText = `${state.hatchSecondsLeft}초`;
+
+                if (state.hatchSecondsLeft <= 0) {
+                    clearInterval(hatchInterval);
+                    hatchEgg();
+                }
+            }
+        }, 1000);
+
+        function hatchEgg() {
+            state.isHatched = true;
+            const randomPick = DIGIMON_SPECIES[Math.floor(Math.random() * DIGIMON_SPECIES.length)];
+            state.activeDigimon = randomPick;
+
+            // Update UI for Hatching
+            petBody.className = 'digimon-idle transition-transform duration-200';
+            petBody.innerHTML = randomPick.svg;
+            nameDisplay.innerText = randomPick.name.split(' ')[0];
+            bannerText.innerText = '✨ 디지몬 부화 완료!';
+            hatchTimer.innerText = '진화완료';
+            
+            setSpeech(randomPick.speech);
+            spawnPopEffect('✨ 부화!');
+        }
+
+        // Particle System for Rain/Snow
+        function initParticles(type) {
+            particles = [];
+            const count = type === 'rain' ? 30 : (type === 'snow' ? 25 : 0);
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    length: Math.random() * 10 + 5,
+                    speed: type === 'rain' ? Math.random() * 5 + 6 : Math.random() * 1 + 0.5,
+                    radius: Math.random() * 2 + 1
+                });
+            }
+        }
+
+        function drawWeatherParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (state.weather === 'rain') {
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                particles.forEach(p => {
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(p.x - 1, p.y + p.length);
+                    p.y += p.speed;
+                    if (p.y > canvas.height) { p.y = -5; p.x = Math.random() * canvas.width; }
+                });
+                ctx.stroke();
+            } else if (state.weather === 'snow') {
+                ctx.fillStyle = '#f8fafc';
+                ctx.beginPath();
+                particles.forEach(p => {
+                    ctx.moveTo(p.x, p.y);
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    p.y += p.speed;
+                    if (p.y > canvas.height) { p.y = -5; p.x = Math.random() * canvas.width; }
+                });
+                ctx.fill();
+            }
+
+            animFrameId = requestAnimationFrame(drawWeatherParticles);
+        }
+
+        function applyWeatherEffects(weatherType) {
+            state.weather = weatherType;
+            lcdScreen.className = 'lcd-screen rounded-xl h-64 relative flex flex-col justify-between items-center p-2.5';
+            cancelAnimationFrame(animFrameId);
+
+            if (['rain', 'snow'].includes(weatherType)) {
+                initParticles(weatherType);
+                drawWeatherParticles();
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            if (weatherType === 'rain') lcdScreen.classList.add('weather-rain');
+            else if (weatherType === 'snow') lcdScreen.classList.add('weather-snow');
+            else if (weatherType === 'wind') {
+                lcdScreen.classList.add('weather-wind', 'screen-shake');
+                if (state.isHatched) petBody.className = 'digimon-wind';
+            }
+
+            document.getElementById('temp-display').innerText = `온도: ${state.temp}°C`;
+            document.getElementById('wind-display').innerText = `바람: ${state.windSpeed}m/s`;
+        }
+
+        function setManualWeather(type) {
+            state.windSpeed = type === 'wind' ? 12.5 : 2.0;
+            applyWeatherEffects(type);
+        }
+
+        // --- Core 5 Actions ---
+        function handleAction(actionType) {
+            if (!state.isHatched) {
+                setSpeech("알이 부화할 때까지 기다려달라냥! 🐣");
+                return;
+            }
+            if (state.isBusy) return;
+
+            switch (actionType) {
+                case 'feed':
+                    state.hunger = Math.min(100, state.hunger + 25);
+                    triggerAction('🍖 맛있는 고기 냠냠!');
+                    break;
+                case 'pet':
+                    state.happy = Math.min(100, state.happy + 20);
+                    triggerAction('💖 쓰다듬어줘서 기분 좋아!');
+                    break;
+                case 'clean':
+                    state.clean = 100;
+                    state.poopCount = 0;
+                    poopLayer.classList.add('hidden');
+                    triggerAction('🧹 LCD 화면이 깨끗해졌어!');
+                    break;
+                case 'study':
+                    state.know = Math.min(100, state.know + 15);
+                    state.hunger = Math.max(0, state.hunger - 5);
+                    triggerAction('🎓 열혈 훈련 완료!');
+                    break;
+                case 'friend':
+                    state.happy = Math.min(100, state.happy + 25);
+                    friendPet.classList.remove('hidden');
+                    triggerAction('⚔️ 친구 디지몬과 배틀!');
+                    setTimeout(() => friendPet.classList.add('hidden'), 2500);
+                    break;
+            }
+            updateUI();
+        }
+
+        function triggerAction(msg) {
+            state.isBusy = true;
+            setSpeech(msg);
+            spawnPopEffect('✨ OK');
+
+            setTimeout(() => {
+                if (state.weather === 'wind') petBody.className = 'digimon-wind';
+                else petBody.className = 'digimon-idle';
+                state.isBusy = false;
+            }, 1500);
+        }
+
+        function setSpeech(msg) { speechText.innerText = msg; }
+
+        function spawnPopEffect(text) {
+            const pop = document.createElement('div');
+            pop.className = 'pop-effect text-amber-900 bg-amber-200 px-2 py-0.5 rounded border border-amber-500 text-xs';
+            pop.innerText = text;
+            pop.style.left = '35%';
+            pop.style.top = '40%';
+            lcdScreen.appendChild(pop);
+            setTimeout(() => pop.remove(), 800);
+        }
+
+        function updateUI() {
+            document.getElementById('stat-hunger').style.width = state.hunger + '%';
+            document.getElementById('stat-hunger-num').innerText = state.hunger + '%';
+            document.getElementById('stat-happy').style.width = state.happy + '%';
+            document.getElementById('stat-happy-num').innerText = state.happy + '%';
+            document.getElementById('stat-clean').style.width = state.clean + '%';
+            document.getElementById('stat-clean-num').innerText = state.clean + '%';
+            document.getElementById('stat-know').style.width = state.know + '%';
+            document.getElementById('stat-know-num').innerText = state.know + '%';
+        }
+
+        // KMA Weather Sync
+        async function fetchKmaWeather() {
+            const cityInfo = CITIES[state.selectedCityKey] || CITIES.jeju;
+            document.getElementById('city-name').innerText = cityInfo.name;
+
+            const now = new Date();
+            if (now.getMinutes() < 40) now.setHours(now.getHours() - 1);
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+
+            const url = `https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${state.apiKey.trim()}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${yyyy}${mm}${dd}&base_time=${hh}00&nx=${cityInfo.nx}&ny=${cityInfo.ny}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                const items = data.response.body.items.item;
+
+                let pty = "0", temp = 20, wind = 2.0;
+                items.forEach(item => {
+                    if (item.category === 'PTY') pty = item.obsrValue;
+                    if (item.category === 'T1H') temp = parseFloat(item.obsrValue);
+                    if (item.category === 'WSD') wind = parseFloat(item.obsrValue);
+                });
+
+                state.temp = Math.round(temp);
+                state.windSpeed = wind;
+
+                let mapped = 'clear';
+                if (pty === '1' || pty === '5') mapped = 'rain';
+                else if (pty === '2' || pty === '3') mapped = 'snow';
+                else if (wind >= 4.5) mapped = 'wind';
+
+                applyWeatherEffects(mapped);
+            } catch (e) {
+                applyWeatherEffects('clear');
+            }
+        }
+
+        function saveWeatherConfig() {
+            state.selectedCityKey = document.getElementById('select-city').value;
+            const key = document.getElementById('input-key').value.trim();
+            if (key) state.apiKey = key;
+            toggleModal('api-modal');
+            fetchKmaWeather();
+        }
+
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        window.onload = function() {
+            fetchKmaWeather();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
