@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제주 어디가 맑을까? - 3D 키캡 여행 권역 안내도</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Perspective 3D Platform Wrapper */
+        .map-stage {
+            perspective: 1000px;
+        }
+
+        .map-board {
+            transform: rotateX(16deg) rotateZ(0deg);
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+        }
+
+        /* Real 3D Keycap Box Styling */
+        .keycap-box {
+            position: relative;
+            background-color: var(--cap-color, #1e293b);
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 
+                0 8px 0 var(--cap-shadow, #0f172a),
+                0 14px 20px rgba(0, 0, 0, 0.45),
+                inset 0 2px 2px rgba(255, 255, 255, 0.25);
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s ease;
+            transform: translateY(0px);
+            outline: none;
+            touch-action: manipulation;
+            will-change: transform, box-shadow;
+        }
+
+        /* Hover effect: Subtle brightness shift without moving layout */
+        .keycap-box:hover:not(.pressed) {
+            filter: brightness(1.12);
+        }
+
+        /* Focus state for keyboard accessibility */
+        .keycap-box:focus-visible {
+            ring: 3px solid #f59e0b;
+            outline: 2px solid #f59e0b;
+        }
+
+        /* 3D Pressed State: 4px Down Shift & Shadow Compression */
+        .keycap-box.pressed {
+            transform: translateY(4px) !important;
+            box-shadow: 
+                0 4px 0 var(--cap-shadow, #0f172a),
+                0 6px 10px rgba(0, 0, 0, 0.6),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+        }
+
+        /* Selected Active State */
+        .keycap-box.selected {
+            border: 2.5px solid #ffffff;
+            box-shadow: 
+                0 8px 0 var(--cap-shadow, #0f172a),
+                0 0 20px var(--cap-glow, rgba(56, 189, 248, 0.5)),
+                inset 0 2px 4px rgba(255, 255, 255, 0.4);
+        }
+
+        .keycap-box.selected.pressed {
+            box-shadow: 
+                0 4px 0 var(--cap-shadow, #0f172a),
+                0 0 12px var(--cap-glow, rgba(56, 189, 248, 0.5)),
+                inset 0 1px 2px rgba(255, 255, 255, 0.2) !important;
+        }
+
+        /* Keycap Top Face Texture */
+        .keycap-face {
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%);
+        }
+
+        /* Reduced motion accessibility query */
+        @media (prefers-reduced-motion: reduce) {
+            .keycap-box {
+                transition: none !important;
+            }
+            .keycap-box.pressed {
+                transform: none !important;
+                opacity: 0.85;
+            }
+            .map-board {
+                transform: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 overflow-x-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                    <i class="fa-solid fa-cloud-sun text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black tracking-tight text-white flex items-center gap-2">
+                        제주 어디가 맑을까? 
+                    </h1>
+                    <p class="text-xs text-sky-400 font-semibold">수업용 여행 권역 안내도</p>
+                </div>
+            </div>
+
+            <!-- Sound Mute/Unmute Toggle -->
+            <button id="soundToggleBtn" 
+                    class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-all text-xs sm:text-sm font-medium text-slate-300 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                    aria-label="클릭 소리 켜기/끄기"
+                    title="수업용 기본 설정: 음소거">
+                <i id="soundIcon" class="fa-solid fa-volume-xmark text-red-400 text-base"></i>
+                <span id="soundLabel" class="text-red-400 font-bold">소리 끔</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+        
+        <!-- Top Toolbar: Date Selection Tabs -->
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 gap-3 shadow-xl">
+            <div class="flex items-center space-x-2">
+                <i class="fa-regular fa-calendar-days text-sky-400 text-lg"></i>
+                <span class="text-sm font-bold text-slate-200">날짜 선택:</span>
+            </div>
+            
+            <div class="flex items-center bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto">
+                <button class="date-tab flex-1 sm:flex-initial px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sky-500 text-white shadow-md shadow-sky-500/30" data-date="오늘">
+                    오늘
+                </button>
+                <button class="date-tab flex-1 sm:flex-initial px-6 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-slate-200 transition-all" data-date="내일">
+                    내일
+                </button>
+                <button class="date-tab flex-1 sm:flex-initial px-6 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-slate-200 transition-all" data-date="모레">
+                    모레
+                </button>
+            </div>
+        </div>
+
+        <!-- 3D Keycap Grid Board Section -->
+        <section class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-4 sm:p-8 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2 text-xs text-slate-400">
+                    <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>원하는 권역 사각형 키캡을 눌러보세요 (3D 입체 블록)</span>
+                </div>
+                <span class="text-xs text-slate-500 font-mono hidden sm:inline-block">Jeju 8-Zone 3D Keycaps Layout</span>
+            </div>
+
+            <!-- 3D Stage & Jeju Relative Geographic Keycap Grid -->
+            <div class="map-stage py-6 px-2 flex items-center justify-center">
+                
+                <div class="map-board w-full max-w-4xl grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 p-4 sm:p-6 bg-slate-950/70 border border-slate-800/80 rounded-3xl shadow-inner relative">
+                    
+                    <!-- 1. 북부 - 제주시권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-1" data-zone="1" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #0284c7; --cap-shadow: #0369a1; --cap-glow: rgba(2, 132, 199, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-sky-200">
+                                <span>북부</span>
+                                <i class="fa-solid fa-city"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">제주시권</h3>
+                                <p class="text-[11px] text-sky-100/80 font-medium">공항·도심</p>
+                            </div>
+                            <div class="text-[10px] text-right text-sky-200/60 font-mono">01</div>
+                        </div>
+                    </div>
+
+                    <!-- 8. 북동부 - 구좌·조천권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-8" data-zone="8" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #4f46e5; --cap-shadow: #3730a3; --cap-glow: rgba(79, 70, 229, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-indigo-200">
+                                <span>북동부</span>
+                                <i class="fa-solid fa-water"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">구좌·조천권</h3>
+                                <p class="text-[11px] text-indigo-100/80 font-medium">함덕·거문오름</p>
+                            </div>
+                            <div class="text-[10px] text-right text-indigo-200/60 font-mono">08</div>
+                        </div>
+                    </div>
+
+                    <!-- 2. 북서부 - 애월권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-2" data-zone="2" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #0d9488; --cap-shadow: #0f766e; --cap-glow: rgba(13, 148, 136, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-teal-200">
+                                <span>북서부</span>
+                                <i class="fa-solid fa-mug-hot"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">애월권</h3>
+                                <p class="text-[11px] text-teal-100/80 font-medium">카페거리·해안</p>
+                            </div>
+                            <div class="text-[10px] text-right text-teal-200/60 font-mono">02</div>
+                        </div>
+                    </div>
+
+                    <!-- 7. 동부 - 표선·성산권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-7" data-zone="7" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #7c3aed; --cap-shadow: #6d28d9; --cap-glow: rgba(124, 58, 237, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-purple-200">
+                                <span>동부</span>
+                                <i class="fa-solid fa-mountain-sun"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">표선·성산권</h3>
+                                <p class="text-[11px] text-purple-100/80 font-medium">일출봉·섭지코지</p>
+                            </div>
+                            <div class="text-[10px] text-right text-purple-200/60 font-mono">07</div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 서부 - 한림·한경권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-3" data-zone="3" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #16a34a; --cap-shadow: #15803d; --cap-glow: rgba(22, 163, 74, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-emerald-200">
+                                <span>서부</span>
+                                <i class="fa-solid fa-wind"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">한림·한경권</h3>
+                                <p class="text-[11px] text-emerald-100/80 font-medium">협재·풍차해안</p>
+                            </div>
+                            <div class="text-[10px] text-right text-emerald-200/60 font-mono">03</div>
+                        </div>
+                    </div>
+
+                    <!-- 6. 남동부 - 서귀포·남원권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-6" data-zone="6" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #db2777; --cap-shadow: #be185d; --cap-glow: rgba(219, 39, 119, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-pink-200">
+                                <span>남동부</span>
+                                <i class="fa-solid fa-tree"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">서귀포·남원권</h3>
+                                <p class="text-[11px] text-pink-100/80 font-medium">폭포·감귤농원</p>
+                            </div>
+                            <div class="text-[10px] text-right text-pink-200/60 font-mono">06</div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 남서부 - 대정권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-4" data-zone="4" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #059669; --cap-shadow: #047857; --cap-glow: rgba(5, 150, 105, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-teal-200">
+                                <span>남서부</span>
+                                <i class="fa-solid fa-ship"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">대정권</h3>
+                                <p class="text-[11px] text-teal-100/80 font-medium">모슬포·송악산</p>
+                            </div>
+                            <div class="text-[10px] text-right text-teal-200/60 font-mono">04</div>
+                        </div>
+                    </div>
+
+                    <!-- 5. 남부 - 안덕·중문권 -->
+                    <div class="keycap-box p-4 sm:p-5 flex flex-col justify-between min-h-[110px] sm:min-h-[135px]" 
+                         id="zone-5" data-zone="5" tabindex="0" role="button" aria-pressed="false"
+                         style="--cap-color: #ca8a04; --cap-shadow: #a16207; --cap-glow: rgba(202, 138, 4, 0.6);">
+                        <div class="keycap-face h-full p-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between text-xs font-bold text-amber-200">
+                                <span>남부</span>
+                                <i class="fa-solid fa-umbrella-beach"></i>
+                            </div>
+                            <div class="my-auto text-center">
+                                <h3 class="text-base sm:text-lg font-black text-white tracking-tight">안덕·중문권</h3>
+                                <p class="text-[11px] text-amber-100/80 font-medium">관광단지·주상절리</p>
+                            </div>
+                            <div class="text-[10px] text-right text-amber-200/60 font-mono">05</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer Controls Legend -->
+            <div class="mt-2 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between text-xs text-slate-400 gap-2">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-hand-pointer text-slate-500"></i> 터치/클릭 지원</span>
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-keyboard text-slate-500"></i> Tab / Enter / Space 키 조작</span>
+                <span class="text-slate-500">Hardware Accelerated 3D Keycaps</span>
+            </div>
+        </section>
+
+        <!-- Weather Status Card (API Pre-connection State) -->
+        <section class="bg-slate-900/60 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            
+            <div class="flex items-center justify-between mb-4">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                    <i class="fa-solid fa-circle-info mr-1.5"></i> 권역별 날씨 상태
+                </span>
+                <span class="text-xs text-amber-400 font-bold bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">
+                    <i class="fa-solid fa-plug-circle-exclamation mr-1"></i> 날씨 API 연결 전
+                </span>
+            </div>
+
+            <!-- Title Header -->
+            <div class="mb-6">
+                <h2 id="cardTitle" class="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    제주시권 <span id="cardDateTag" class="text-sky-400 text-lg sm:text-xl font-bold ml-2">- 오늘 날씨</span>
+                </h2>
+                <p id="cardSubtitle" class="text-xs sm:text-sm text-slate-400 mt-1">
+                    선택된 여행 권역의 실시간 기상 정보 표기 카드입니다.
+                </p>
+            </div>
+
+            <!-- Weather Details Metric Grid ('연결 전' Table) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                
+                <!-- 1. 기온 -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span>기온</span>
+                        <i class="fa-solid fa-temperature-half text-amber-400 text-base"></i>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-xl sm:text-2xl font-extrabold text-slate-400">연결 전</span>
+                    </div>
+                </div>
+
+                <!-- 2. 강수확률 -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span>강수확률</span>
+                        <i class="fa-solid fa-cloud-showers-heavy text-sky-400 text-base"></i>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-xl sm:text-2xl font-extrabold text-slate-400">연결 전</span>
+                    </div>
+                </div>
+
+                <!-- 3. 풍속 -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span>풍속</span>
+                        <i class="fa-solid fa-wind text-teal-400 text-base"></i>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-xl sm:text-2xl font-extrabold text-slate-400">연결 전</span>
+                    </div>
+                </div>
+
+                <!-- 4. 여행 점수 -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
+                        <span>여행 점수</span>
+                        <i class="fa-solid fa-star text-yellow-400 text-base"></i>
+                    </div>
+                    <div class="mt-3">
+                        <span class="text-xl sm:text-2xl font-extrabold text-slate-400">연결 전</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Note -->
+            <div class="mt-6 p-4 rounded-2xl bg-slate-950/50 border border-slate-800 text-xs text-slate-400 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-dot text-sky-400"></i>
+                    날씨 데이터 API 연동 후 실시간 정보가 자동 업데이트됩니다.
+                </span>
+                <span id="audioStatusNotice" class="text-red-400 font-semibold">음소거 중</span>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 py-4 text-center text-xs text-slate-500">
+        <p>© 2026 제주 어디가 맑을까? - 수업용 여행 권역 안내도 시스템</p>
+    </footer>
+
+    <!-- JavaScript Audio & Interactive Engine -->
+    <script>
+        /**
+         * 8-Zone Name & Subtitle Map Database
+         */
+        const zoneInfo = {
+            1: { name: "제주시권", subtitle: "제주 국제공항 및 북부 중심 도심 지역" },
+            2: { name: "애월권", subtitle: "아름다운 애월 카페거리와 해안 산책로" },
+            3: { name: "한림·한경권", subtitle: "협재해수욕장 및 신창풍차해안도로" },
+            4: { name: "대정권", subtitle: "모슬포항, 송악산 및 마라도 선착장" },
+            5: { name: "안덕·중문권", subtitle: "중문관광단지, 주상절리 및 산방산" },
+            6: { name: "서귀포·남원권", subtitle: "서귀포 남부 도심, 폭포 및 감귤농원" },
+            7: { name: "표선·성산권", subtitle: "성산일출봉, 섭지코지 및 표선해변" },
+            8: { name: "구좌·조천권", subtitle: "함덕해수욕장, 월정리 및 거문오름" }
+        };
+
+        /**
+         * Web Audio API Synthesizer for Mechanical Keyboard Sound ("Thock")
+         */
+        class KeyboardAudioSynthesizer {
+            constructor() {
+                this.audioCtx = null;
+                this.isMuted = true; // Default Muted for Classroom Use
+                this.masterVolume = 0.12; // Low, gentle volume
+            }
+
+            init() {
+                if (!this.audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.audioCtx = new AudioContext();
+                    }
+                }
+                if (this.audioCtx && this.audioCtx.state === 'suspended') {
+                    this.audioCtx.resume();
+                }
+            }
+
+            playThock() {
+                if (this.isMuted) return;
+
+                try {
+                    this.init();
+                    if (!this.audioCtx) return;
+
+                    const now = this.audioCtx.currentTime;
+
+                    // 1. Low Frequency Pulse Oscillator
+                    const osc = this.audioCtx.createOscillator();
+                    const oscGain = this.audioCtx.createGain();
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(35, now + 0.06);
+
+                    oscGain.gain.setValueAtTime(this.masterVolume, now);
+                    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+                    osc.connect(oscGain);
+
+                    // 2. Filtered Noise Click Burst
+                    const bufferSize = this.audioCtx.sampleRate * 0.03; // 30ms noise
+                    const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+                    const output = noiseBuffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        output[i] = Math.random() * 2 - 1;
+                    }
+
+                    const noise = this.audioCtx.createBufferSource();
+                    noise.buffer = noiseBuffer;
+
+                    const noiseFilter = this.audioCtx.createBiquadFilter();
+                    noiseFilter.type = 'lowpass';
+                    noiseFilter.frequency.setValueAtTime(800, now);
+
+                    const noiseGain = this.audioCtx.createGain();
+                    noiseGain.gain.setValueAtTime(this.masterVolume * 0.5, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+                    noise.connect(noiseFilter);
+                    noiseFilter.connect(noiseGain);
+
+                    // Output Routing
+                    oscGain.connect(this.audioCtx.destination);
+                    noiseGain.connect(this.audioCtx.destination);
+
+                    // Play
+                    osc.start(now);
+                    osc.stop(now + 0.07);
+                    noise.start(now);
+                    noise.stop(now + 0.03);
+
+                } catch (e) {
+                    console.warn("Audio Context playback error:", e);
+                }
+            }
+        }
+
+        // Global State & Audio Instance
+        const keyAudio = new KeyboardAudioSynthesizer();
+        let selectedZoneId = 1; // Default Zone: 제주시권
+        let selectedDate = "오늘"; // Default Date: 오늘
+        const keyStateFlags = new Map(); // Debounce map to avoid duplicated sound
+
+        /**
+         * Update Weather Details Card
+         */
+        function updateCardDisplay() {
+            const info = zoneInfo[selectedZoneId];
+            if (!info) return;
+
+            const cardTitle = document.getElementById('cardTitle');
+            const cardSubtitle = document.getElementById('cardSubtitle');
+
+            cardTitle.innerHTML = `${info.name} <span class="text-sky-400 text-lg sm:text-xl font-bold ml-2">- ${selectedDate} 날씨</span>`;
+            cardSubtitle.textContent = info.subtitle;
+
+            // Highlight selected Keycap
+            document.querySelectorAll('.keycap-box').forEach(box => {
+                const zId = parseInt(box.getAttribute('data-zone'));
+                if (zId === selectedZoneId) {
+                    box.classList.add('selected');
+                    box.setAttribute('aria-pressed', 'true');
+                } else {
+                    box.classList.remove('selected');
+                    box.setAttribute('aria-pressed', 'false');
+                }
+            });
+        }
+
+        /**
+         * Keycap Press Trigger
+         */
+        function handleKeyPress(keycapElement) {
+            const zId = parseInt(keycapElement.getAttribute('data-zone'));
+
+            // Prevent rapid duplicate sound
+            if (keyStateFlags.get(zId)) return;
+            keyStateFlags.set(zId, true);
+
+            // Add Pressed Class (4px down shift)
+            keycapElement.classList.add('pressed');
+
+            // Play Mechanical Sound
+            keyAudio.playThock();
+
+            // Set state
+            selectedZoneId = zId;
+            updateCardDisplay();
+        }
+
+        /**
+         * Keycap Release Trigger (150ms spring back)
+         */
+        function handleKeyRelease(keycapElement) {
+            const zId = parseInt(keycapElement.getAttribute('data-zone'));
+            keyStateFlags.set(zId, false);
+
+            setTimeout(() => {
+                keycapElement.classList.remove('pressed');
+            }, 10);
+        }
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const keycapBoxes = document.querySelectorAll('.keycap-box');
+            const dateTabs = document.querySelectorAll('.date-tab');
+            const soundToggleBtn = document.getElementById('soundToggleBtn');
+            const soundIcon = document.getElementById('soundIcon');
+            const soundLabel = document.getElementById('soundLabel');
+            const audioStatusNotice = document.getElementById('audioStatusNotice');
+
+            // 1. Date Tab Listeners
+            dateTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    dateTabs.forEach(t => {
+                        t.className = "date-tab flex-1 sm:flex-initial px-6 py-2 rounded-lg text-sm font-bold text-slate-400 hover:text-slate-200 transition-all";
+                    });
+                    tab.className = "date-tab flex-1 sm:flex-initial px-6 py-2 rounded-lg text-sm font-bold transition-all bg-sky-500 text-white shadow-md shadow-sky-500/30";
+                    selectedDate = tab.getAttribute('data-date');
+                    updateCardDisplay();
+                });
+            });
+
+            // 2. 3D Keycap Event Listeners (Mouse, Touch & Keyboard)
+            keycapBoxes.forEach(box => {
+                
+                box.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleKeyPress(box);
+                });
+
+                box.addEventListener('pointerup', () => handleKeyRelease(box));
+                box.addEventListener('pointerleave', () => handleKeyRelease(box));
+                box.addEventListener('pointercancel', () => handleKeyRelease(box));
+
+                // Keyboard Controls
+                box.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleKeyPress(box);
+                    }
+                });
+
+                box.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleKeyRelease(box);
+                    }
+                });
+            });
+
+            // 3. Audio Toggle Control
+            soundToggleBtn.addEventListener('click', () => {
+                keyAudio.init();
+                keyAudio.isMuted = !keyAudio.isMuted;
+
+                if (keyAudio.isMuted) {
+                    soundIcon.className = "fa-solid fa-volume-xmark text-red-400 text-base";
+                    soundLabel.textContent = "소리 끔";
+                    soundLabel.className = "text-red-400 font-bold";
+                    audioStatusNotice.textContent = "음소거 중";
+                    audioStatusNotice.className = "text-red-400 font-semibold";
+                } else {
+                    soundIcon.className = "fa-solid fa-volume-high text-emerald-400 text-base";
+                    soundLabel.textContent = "소리 켬";
+                    soundLabel.className = "text-emerald-400 font-bold";
+                    audioStatusNotice.textContent = "소리 켜짐 (기계식 Thock음)";
+                    audioStatusNotice.className = "text-emerald-400 font-semibold";
+
+                    // Play test click
+                    keyAudio.playThock();
+                }
+            });
+
+            // Initial Card Display Rendering
+            updateCardDisplay();
+        });
+    </script>
+</body>
+</html>
