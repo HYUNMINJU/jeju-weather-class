@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPORTS PLANNER - 남주중학교 바이브 코딩</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#0f172a',
+                            950: '#090d16',
+                        },
+                        lime: {
+                            400: '#a3e635',
+                            500: '#84cc16',
+                            600: '#65a30d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background-color: #f0f6ff;
+            color: #0f172a;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-600 selection:text-white pb-12">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-brand-900 border-b border-brand-800 text-white sticky top-0 z-50 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-lime-500 flex items-center justify-center font-black text-brand-950 text-xl shadow-md">
+                        SP
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                            SPORTS PLANNER
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-800 text-lime-300 border border-lime-400/40">남주중 2학년 SW</span>
+                        </h1>
+                        <p class="text-xs text-blue-100/90 font-medium">날씨를 확인하고 나에게 맞는 최적의 야외 운동 시간을 찾아보세요.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Status Indicator -->
+            <div id="data-source-badge" class="self-start md:self-auto px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand-800 text-blue-100 border border-brand-700 flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>조회 대기 중</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow space-y-8">
+
+        <!-- STEP 1: Location & Time Range Selection -->
+        <section class="bg-white rounded-2xl p-6 border border-blue-200 shadow-md space-y-5">
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
+                <span class="w-8 h-8 rounded-xl bg-brand-600 text-white font-black flex items-center justify-center text-sm shadow-sm">1</span>
+                <h2 class="text-xl font-bold text-slate-900">지역 및 운동 시간대 선택</h2>
+            </div>
+            
+            <p class="text-sm font-semibold text-slate-700">날씨를 조회할 지역과 운동하고 싶은 날짜/시간 범위를 선택하세요.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <!-- Location Select -->
+                <div class="space-y-2">
+                    <label for="location-select" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">조회 대상 지역</label>
+                    <select id="location-select" onchange="handleLocationOrTimeChange()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold rounded-xl px-4 py-3 text-base focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 transition">
+                        <option value="동홍동" data-nx="53" data-ny="33" selected>서귀포시 동홍동 (nx=53, ny=33) [기본 - 남주중학교 위치]</option>
+                        <option value="중문동" data-nx="51" data-ny="32">서귀포시 중문동 (nx=51, ny=32)</option>
+                        <option value="성산읍" data-nx="60" data-ny="37">서귀포시 성산읍 (nx=60, ny=37)</option>
+                        <option value="대정읍" data-nx="48" data-ny="32">서귀포시 대정읍 (nx=48, ny=32)</option>
+                        <option value="표선면" data-nx="58" data-ny="34">서귀포시 표선면 (nx=58, ny=34)</option>
+                    </select>
+                </div>
+
+                <!-- Date & Hours Select -->
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="space-y-1">
+                        <label for="filter-date" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">날짜 선택 (달력)</label>
+                        <input type="date" id="filter-date" onchange="handleLocationOrTimeChange()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold rounded-xl px-3 py-2.5 text-sm focus:border-brand-600 focus:outline-none cursor-pointer">
+                    </div>
+                    <div class="space-y-1">
+                        <label for="filter-start-hour" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">시작 시각</label>
+                        <select id="filter-start-hour" onchange="handleLocationOrTimeChange()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold rounded-xl px-2 py-3 text-sm focus:border-brand-600 focus:outline-none">
+                            <!-- JS Populated -->
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label for="filter-end-hour" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">종료 시각</label>
+                        <select id="filter-end-hour" onchange="handleLocationOrTimeChange()" class="w-full bg-slate-50 border border-slate-300 text-slate-900 font-bold rounded-xl px-2 py-3 text-sm focus:border-brand-600 focus:outline-none">
+                            <!-- JS Populated -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Fetch Button -->
+                <div>
+                    <button id="btn-fetch-weather" onclick="fetchWeatherData()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-black px-6 py-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 text-base">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        선택 시간의 날씨 가져오기
+                    </button>
+                </div>
+            </div>
+
+            <!-- Location Notice -->
+            <div class="bg-blue-50/80 rounded-xl p-3.5 border border-blue-200 flex items-start gap-3 text-xs text-slate-800 leading-relaxed font-medium">
+                <svg class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <strong class="text-brand-900 font-bold">안내:</strong> 동홍동 좌표(nx=53, ny=33)는 대한민국 기상청 행정구역 대표 격자 단위이며, 학교 운동장에서 직접 측정한 측정값이 아닌 <strong>동 단위 격자 예보 값</strong>입니다.
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 2: Selected Weather Forecast Table -->
+        <section class="bg-white rounded-2xl p-6 border border-blue-200 shadow-md space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-brand-600 text-white font-black flex items-center justify-center text-sm shadow-sm">2</span>
+                    <h2 class="text-xl font-bold text-slate-900">선택한 시간대의 날씨 예보</h2>
+                </div>
+                <div id="fetch-info-label" class="text-xs font-semibold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                    발표 시각: <span id="info-base-time" class="text-brand-700 font-bold">-</span> | 조회 시각: <span id="info-fetch-time" class="text-slate-800 font-bold">-</span>
+                </div>
+            </div>
+
+            <!-- Status Banner Messages -->
+            <div id="status-container" class="rounded-xl p-5 border text-sm font-semibold transition-all bg-slate-50 border-slate-200 text-slate-700">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>지역과 날짜/시간을 선택한 후 <strong>[선택 시간의 날씨 가져오기]</strong> 버튼을 눌러주세요.</span>
+                </div>
+            </div>
+
+            <!-- Filtered Hourly Weather Table Wrapper -->
+            <div id="weather-table-wrapper" class="hidden space-y-4">
+                <div class="flex justify-between items-center text-xs font-bold text-brand-900 bg-blue-50/70 p-3 rounded-xl border border-blue-200">
+                    <span>📌 <span id="selected-range-label" class="text-brand-700 font-black">선택한 시간 범위의 날씨만 표시 중</span></span>
+                    <span class="text-slate-500">출처: 기상청 단기예보</span>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <table class="w-full text-left text-sm text-slate-800 border-collapse">
+                        <thead class="bg-slate-100 text-slate-800 uppercase text-xs border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3.5 font-bold">날짜 / 시간</th>
+                                <th class="px-4 py-3.5 font-bold">기온 (TMP)</th>
+                                <th class="px-4 py-3.5 font-bold">강수확률 (POP)</th>
+                                <th class="px-4 py-3.5 font-bold">풍속 (WSD)</th>
+                                <th class="px-4 py-3.5 font-bold">습도 (REH)</th>
+                                <th class="px-4 py-3.5 font-bold">하늘 상태 (SKY)</th>
+                                <th class="px-4 py-3.5 font-bold">강수 형태 (PTY)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weather-tbody" class="divide-y divide-slate-200 font-semibold">
+                            <!-- Weather Rows Inject Here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Raw Data Accordion (API Learning) -->
+                <div class="pt-2">
+                    <button onclick="toggleRawDataAccordion()" class="text-xs text-brand-600 hover:text-brand-800 font-bold flex items-center gap-1">
+                        <span>🔍 API 원본 응답 데이터 확인하기</span>
+                        <svg id="raw-accordion-icon" class="w-3.5 h-3.5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+
+                    <div id="raw-data-panel" class="hidden mt-3 p-4 bg-slate-900 rounded-xl text-white space-y-3 text-xs shadow-md">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-200">
+                            <div><span class="text-slate-400">선택 지역:</span> <strong id="raw-loc" class="text-white">-</strong></div>
+                            <div><span class="text-slate-400">격자 좌표:</span> <strong id="raw-grid" class="text-white">nx=-, ny=-</strong></div>
+                            <div><span class="text-slate-400">발표 시각:</span> <strong id="raw-basetime" class="text-white">-</strong></div>
+                            <div><span class="text-slate-400">응답 상태:</span> <strong id="raw-status" class="text-lime-400">-</strong></div>
+                        </div>
+                        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-slate-300 text-[11px] overflow-x-auto max-h-48">
+                            <pre id="raw-json">조회된 데이터가 없습니다.</pre>
+                        </div>
+                        <div class="text-[11px] text-slate-300 bg-slate-800 p-2.5 rounded border border-slate-700">
+                            <strong>항목 설명:</strong> TMP = 기온(℃), POP = 강수확률(%), WSD = 풍속(m/s), REH = 습도(%), SKY = 하늘상태(1:맑음,3:구름많음,4:흐림), PTY = 강수형태(0:없음,1:비,2:비/눈,3:눈,4:소나기)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 3 & 4: Sport Selection & Time Suitability Judgment -->
+        <section class="bg-white rounded-2xl p-6 border border-blue-200 shadow-md space-y-6">
+            <div class="flex items-center gap-3 border-b border-slate-100 pb-3">
+                <span class="w-8 h-8 rounded-xl bg-brand-600 text-white font-black flex items-center justify-center text-sm shadow-sm">3</span>
+                <h2 class="text-xl font-bold text-slate-900">운동 종목 선택 및 적합 시간 판정</h2>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">하고 싶은 운동 종목을 클릭하세요</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                    <button type="button" onclick="selectSport('축구')" class="sport-btn active bg-brand-600 border-2 border-brand-600 text-white rounded-xl p-3.5 text-center text-sm font-bold shadow-md transition">⚽ 축구</button>
+                    <button type="button" onclick="selectSport('농구')" class="sport-btn bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-800 rounded-xl p-3.5 text-center text-sm font-bold transition">🏀 농구</button>
+                    <button type="button" onclick="selectSport('달리기')" class="sport-btn bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-800 rounded-xl p-3.5 text-center text-sm font-bold transition">🏃 달리기</button>
+                    <button type="button" onclick="selectSport('자전거')" class="sport-btn bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-800 rounded-xl p-3.5 text-center text-sm font-bold transition">🚴 자전거</button>
+                    <button type="button" onclick="selectSport('걷기')" class="sport-btn bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-800 rounded-xl p-3.5 text-center text-sm font-bold transition">🚶 걷기</button>
+                    <button type="button" onclick="selectSport('custom')" class="sport-btn bg-slate-50 hover:bg-blue-50 border-2 border-slate-200 text-slate-800 rounded-xl p-3.5 text-center text-sm font-bold transition">✏️ 직접 입력</button>
+                </div>
+
+                <div id="custom-sport-wrapper" class="hidden pt-1">
+                    <input type="text" id="custom-sport-input" placeholder="운동 이름을 입력하세요 (예: 배드민턴)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:border-brand-600">
+                </div>
+
+                <!-- Auto Applied Sport Weather Criteria Card -->
+                <div class="bg-blue-50 border-2 border-brand-200 rounded-xl p-4 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase text-brand-900 tracking-wider flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-600"></span>
+                            선택한 운동의 날씨 추천 기준
+                        </span>
+                        <span class="text-[11px] font-bold text-brand-700 bg-white px-2.5 py-0.5 rounded-full border border-brand-200">
+                            💡 자동 판정 적용중
+                        </span>
+                    </div>
+                    <div id="sport-preset-summary" class="text-sm font-bold text-slate-900 leading-relaxed">
+                        ⚽ 축구 추천 날씨: 기온 10~22℃ | 강수확률 20% 이하 | 풍속 5m/s 이하 | 비·눈 제외
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Suitability Evaluation Results -->
+            <div class="space-y-4 pt-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        ⏱️ 선택한 시간대의 운동 적합도 분석
+                    </h3>
+                    <span id="evaluation-count-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-300">
+                        날씨를 먼저 가져와주세요
+                    </span>
+                </div>
+
+                <!-- Evaluation Cards List -->
+                <div id="evaluation-list-container" class="space-y-3">
+                    <div class="text-center py-10 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold">
+                        [1. 날씨 가져오기] 후 운동 종목을 선택하면 각 시간별로 <strong>운동하기 좋은 시간이다 / 아니다</strong>를 판정해 드립니다.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 5: Selected Plan Summary -->
+        <section id="selected-plan-section" class="hidden bg-gradient-to-br from-brand-900 to-slate-900 text-white rounded-2xl p-6 border-2 border-lime-400 shadow-xl space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-full bg-lime-500 text-brand-950 font-black flex items-center justify-center text-lg shadow">✓</span>
+                    <h2 class="text-xl font-black text-white">최종 확정 운동 계획 Summary</h2>
+                </div>
+                <button onclick="cancelSelectedPlan()" class="text-xs text-blue-100 hover:text-white bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+                    선택 취소
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-xs text-lime-400 font-bold uppercase">운동 및 장소 정보</div>
+                    <div class="text-lg font-bold text-white"><span id="plan-sport-name">축구</span> @ <span id="plan-location-name">동홍동</span></div>
+                    <div class="text-sm text-blue-100">일시: <strong id="plan-datetime" class="text-lime-300">-</strong></div>
+                </div>
+
+                <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="text-xs text-lime-400 font-bold uppercase">해당 시각 예보</div>
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 block">기온</span><strong id="plan-temp" class="text-sm text-white">-</strong></div>
+                        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 block">강수확률</span><strong id="plan-pop" class="text-sm text-white">-</strong></div>
+                        <div class="bg-slate-900 p-2 rounded border border-slate-800"><span class="text-slate-400 block">풍속</span><strong id="plan-wsd" class="text-sm text-white">-</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-1">
+                <div class="text-xs text-slate-400 font-bold">적용된 종목 추천 날씨 기준</div>
+                <div id="plan-conditions-text" class="text-xs text-blue-100 font-medium">-</div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                <p class="text-xs text-amber-300 flex items-center gap-1.5">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <span>예보를 참고한 계획입니다. 출발 전에 실제 날씨와 현장 상황을 반드시 확인하세요!</span>
+                </p>
+                <button onclick="copyPlanSummary()" class="w-full sm:w-auto bg-lime-500 hover:bg-lime-400 text-slate-950 font-black px-6 py-2.5 rounded-xl shadow transition text-sm flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                    계획 요약 복사하기
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 py-6 border-t border-slate-200 text-center text-xs text-slate-500 font-medium">
+        <p>남주중학교 2학년 SW 바이브 코딩 실습용 프로젝트 — SPORTS PLANNER</p>
+        <p class="mt-1">기상청 단기예보 Open API 실시간 연동</p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-brand-900 text-white font-bold px-5 py-3 rounded-xl shadow-2xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2 border border-brand-800">
+        <span id="toast-message">알림 메시지</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        /**
+         * SPORT WEATHER PRESETS
+         */
+        const SPORT_PRESETS = {
+            '축구': { minTemp: 10, maxTemp: 22, maxPop: 20, maxWsd: 5, excludeRain: true, label: '⚽ 축구 추천 날씨: 기온 10~22℃ | 강수확률 20% 이하 | 풍속 5m/s 이하 | 비·눈 제외' },
+            '농구': { minTemp: 12, maxTemp: 24, maxPop: 10, maxWsd: 4, excludeRain: true, label: '🏀 농구 추천 날씨: 기온 12~24℃ | 강수확률 10% 이하 | 풍속 4m/s 이하 | 비·눈 제외' },
+            '달리기': { minTemp: 8, maxTemp: 20, maxPop: 20, maxWsd: 5, excludeRain: true, label: '🏃 달리기 추천 날씨: 기온 8~20℃ | 강수확률 20% 이하 | 풍속 5m/s 이하 | 비·눈 제외' },
+            '자전거': { minTemp: 10, maxTemp: 22, maxPop: 20, maxWsd: 5, excludeRain: true, label: '🚴 자전거 추천 날씨: 기온 10~22℃ | 강수확률 20% 이하 | 풍속 5m/s 이하 | 비·눈 제외' },
+            '걷기': { minTemp: 10, maxTemp: 25, maxPop: 30, maxWsd: 6, excludeRain: true, label: '🚶 걷기 추천 날씨: 기온 10~25℃ | 강수확률 30% 이하 | 풍속 6m/s 이하 | 비·눈 제외' },
+            'custom': { minTemp: 10, maxTemp: 25, maxPop: 30, maxWsd: 5, excludeRain: true, label: '✏️ 직접 입력 추천 날씨: 기온 10~25℃ | 강수확률 30% 이하 | 풍속 5m/s 이하 | 비·눈 제외' }
+        };
+
+        /**
+         * GLOBAL STATE
+         */
+        const STATE = {
+            apiKey: '',
+            selectedLocation: '동홍동',
+            gridNx: 53,
+            gridNy: 33,
+            rawApiResponse: null,
+            allParsedForecasts: [],
+            filteredForecasts: [],
+            selectedSport: '축구',
+            currentConditions: SPORT_PRESETS['축구'],
+            selectedPlan: null
+        };
+
+        /**
+         * INITIALIZATION
+         */
+        window.onload = function() {
+            initDatePicker();
+            populateTimeDropdowns();
+            handleLocationOrTimeChange();
+            fetchWeatherData();
+        };
+
+        function initDatePicker() {
+            const dateInput = document.getElementById('filter-date');
+            if (!dateInput) return;
+            
+            const today = new Date();
+            const maxDate = new Date();
+            maxDate.setDate(today.getDate() + 3);
+
+            const formatDate = (d) => {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+
+            dateInput.min = formatDate(today);
+            dateInput.max = formatDate(maxDate);
+            if (!dateInput.value) {
+                dateInput.value = formatDate(today);
+            }
+        }
+
+        function populateTimeDropdowns() {
+            const startSelect = document.getElementById('filter-start-hour');
+            const endSelect = document.getElementById('filter-end-hour');
+            if (!startSelect || !endSelect) return;
+
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+
+            for (let h = 0; h < 24; h++) {
+                const hourStr = String(h).padStart(2, '0');
+                const label = `${hourStr}:00`;
+
+                const optStart = document.createElement('option');
+                optStart.value = h;
+                optStart.textContent = label;
+                if (h === 8) optStart.selected = true; // Default 08:00
+                startSelect.appendChild(optStart);
+
+                const optEnd = document.createElement('option');
+                optEnd.value = h;
+                optEnd.textContent = label;
+                if (h === 20) optEnd.selected = true; // Default 20:00
+                endSelect.appendChild(optEnd);
+            }
+        }
+
+        function handleLocationOrTimeChange() {
+            const select = document.getElementById('location-select');
+            const selectedOption = select.options[select.selectedIndex];
+            STATE.selectedLocation = select.value;
+            STATE.gridNx = parseInt(selectedOption.getAttribute('data-nx'));
+            STATE.gridNy = parseInt(selectedOption.getAttribute('data-ny'));
+
+            STATE.selectedPlan = null;
+            document.getElementById('selected-plan-section').classList.add('hidden');
+            
+            if (STATE.allParsedForecasts.length > 0) {
+                filterForecastsBySelectedTime();
+                renderWeatherTable();
+                evaluateSportSuitability();
+            } else {
+                updateStatusBanner('before', `지역이 [${STATE.selectedLocation}] (nx=${STATE.gridNx}, ny=${STATE.gridNy})로 선택되었습니다. 버튼을 눌러 날씨를 불러오세요.`);
+                updateBadge('STANDBY');
+            }
+        }
+
+        function getLatestBaseDateTime() {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const kst = new Date(utc + (9 * 3600000));
+
+            const hours = kst.getHours();
+            const minutes = kst.getMinutes();
+            const currentMinutes = hours * 60 + minutes;
+
+            const baseTimes = [
+                { time: '0200', mins: 2 * 60 + 10 },
+                { time: '0500', mins: 5 * 60 + 10 },
+                { time: '0800', mins: 8 * 60 + 10 },
+                { time: '1100', mins: 11 * 60 + 10 },
+                { time: '1400', mins: 14 * 60 + 10 },
+                { time: '1700', mins: 17 * 60 + 10 },
+                { time: '2000', mins: 20 * 60 + 10 },
+                { time: '2300', mins: 23 * 60 + 10 }
+            ];
+
+            let targetDate = new Date(kst);
+            let targetTime = '2300';
+            let selectedIndex = -1;
+
+            for (let i = baseTimes.length - 1; i >= 0; i--) {
+                if (currentMinutes >= baseTimes[i].mins) {
+                    targetTime = baseTimes[i].time;
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            if (selectedIndex === -1) {
+                targetDate.setDate(targetDate.getDate() - 1);
+                targetTime = '2300';
+            }
+
+            const yyyy = targetDate.getFullYear();
+            const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(targetDate.getDate()).padStart(2, '0');
+
+            return {
+                baseDate: `${yyyy}${mm}${dd}`,
+                baseTime: targetTime,
+                formattedDate: `${yyyy}-${mm}-${dd}`,
+                formattedTime: `${targetTime.substring(0,2)}:00`
+            };
+        }
+
+        async function fetchWeatherData() {
+            updateStatusBanner('loading', `기상청 서버에 [${STATE.selectedLocation}] 최신 단기예보를 요청하고 있습니다...`);
+            updateBadge('LOADING');
+
+            const baseInfo = getLatestBaseDateTime();
+            let keyToUse = STATE.apiKey.trim();
+            let keyParam = keyToUse.includes('%') ? keyToUse : encodeURIComponent(keyToUse);
+
+            const baseTimesList = ['0200', '0500', '0800', '1100', '1400', '1700', '2000', '2300'];
+            let candidateList = [];
+            
+            let curDate = new Date(
+                parseInt(baseInfo.baseDate.substring(0,4)),
+                parseInt(baseInfo.baseDate.substring(4,6)) - 1,
+                parseInt(baseInfo.baseDate.substring(6,8))
+            );
+            let idx = baseTimesList.indexOf(baseInfo.baseTime);
+
+            for (let i = 0; i < 4; i++) {
+                const yyyy = curDate.getFullYear();
+                const mm = String(curDate.getMonth() + 1).padStart(2, '0');
+                const dd = String(curDate.getDate()).padStart(2, '0');
+                const bTime = baseTimesList[idx];
+                candidateList.push({
+                    baseDate: `${yyyy}${mm}${dd}`,
+                    baseTime: bTime,
+                    formattedDate: `${yyyy}-${mm}-${dd}`,
+                    formattedTime: `${bTime.substring(0,2)}:00`
+                });
+                idx--;
+                if (idx < 0) {
+                    idx = baseTimesList.length - 1;
+                    curDate.setDate(curDate.getDate() - 1);
+                }
+            }
+
+            let successResult = null;
+            let lastErrorMsg = '';
+
+            for (let cand of candidateList) {
+                const endpoint = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
+                const queryParams = [
+                    `serviceKey=${keyParam}`,
+                    `pageNo=1`,
+                    `numOfRows=1000`,
+                    `dataType=JSON`,
+                    `base_date=${cand.baseDate}`,
+                    `base_time=${cand.baseTime}`,
+                    `nx=${STATE.gridNx}`,
+                    `ny=${STATE.gridNy}`
+                ].join('&');
+
+                const fullUrl = `${endpoint}?${queryParams}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+                try {
+                    const response = await fetch(fullUrl, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP 오류 Status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const header = data.response?.header;
+
+                    if (!header || header.resultCode !== '00') {
+                        const code = header?.resultCode || 'UNKNOWN';
+                        const msg = header?.resultMsg || '응답 데이터 형식 오류';
+                        throw new Error(`${msg} (코드: ${code})`);
+                    }
+
+                    const items = data.response?.body?.items?.item;
+                    if (items && items.length > 0) {
+                        successResult = { data, cand, items };
+                        break;
+                    }
+                } catch (err) {
+                    clearTimeout(timeoutId);
+                    let errMsg = err.name === 'AbortError' ? '기상청 응답 지연 (4초 초과)' : err.message;
+                    console.warn(`[KMA BaseTime ${cand.baseTime} 실패]`, errMsg);
+                    lastErrorMsg = errMsg;
+                }
+            }
+
+            if (successResult) {
+                STATE.rawApiResponse = successResult.data;
+                STATE.allParsedForecasts = parseKmaItems(successResult.items);
+
+                // Filter forecasts ONLY for user selected date & hour range
+                filterForecastsBySelectedTime();
+                
+                renderWeatherTable();
+                renderRawData(successResult.cand.formattedDate + ' ' + successResult.cand.formattedTime, '정상 수신 (200 OK)');
+                updateStatusBanner('success', `[기상청 실제 데이터 수신 완료] ${STATE.selectedLocation} (발표시각: ${successResult.cand.formattedDate} ${successResult.cand.formattedTime})의 단기예보를 성공적으로 불러왔습니다.`);
+                updateBadge('REAL_SUCCESS', successResult.cand.formattedTime);
+                showToast(`[${STATE.selectedLocation}] 실시간 예보를 불러왔습니다.`);
+
+                // Evaluate suitability for chosen sport
+                evaluateSportSuitability();
+            } else {
+                let failReason = lastErrorMsg || "기상청 서버 응답 실패";
+                updateStatusBanner('error', `날씨를 가져오지 못했어요.<br><span class="font-bold">원인:</span> ${failReason}<br><button onclick="fetchWeatherData()" class="mt-2 bg-rose-600 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition shadow-sm">🔄 기상청 API 다시 시도</button>`);
+                updateBadge('FAILED');
+            }
+        }
+
+        function parseKmaItems(items) {
+            const map = new Map();
+
+            items.forEach(item => {
+                const key = `${item.fcstDate}_${item.fcstTime}`;
+                if (!map.has(key)) {
+                    map.set(key, {
+                        fcstDate: item.fcstDate,
+                        fcstTime: item.fcstTime,
+                        TMP: null,
+                        POP: null,
+                        WSD: null,
+                        REH: null,
+                        SKY: null,
+                        PTY: null
+                    });
+                }
+                const entry = map.get(key);
+                if (['TMP', 'POP', 'WSD', 'REH', 'SKY', 'PTY'].includes(item.category)) {
+                    entry[item.category] = item.fcstValue;
+                }
+            });
+
+            return Array.from(map.values()).sort((a, b) => {
+                return (a.fcstDate + a.fcstTime).localeCompare(b.fcstDate + b.fcstTime);
+            });
+        }
+
+        function filterForecastsBySelectedTime() {
+            const dateInput = document.getElementById('filter-date').value;
+            const startHour = parseInt(document.getElementById('filter-start-hour').value);
+            const endHour = parseInt(document.getElementById('filter-end-hour').value);
+
+            if (startHour > endHour) {
+                showToast("⚠️ 시작 시간이 종료 시간보다 늦습니다. 시간을 수정하세요.");
+            }
+
+            const targetDateStr = dateInput ? dateInput.replace(/-/g, '') : getFormattedDateOffset(0);
+
+            STATE.filteredForecasts = STATE.allParsedForecasts.filter(f => {
+                if (f.fcstDate !== targetDateStr) return false;
+                const hour = parseInt(f.fcstTime.substring(0, 2));
+                return hour >= startHour && hour <= endHour;
+            });
+
+            const displayDate = dateInput || targetDateStr;
+            const startLabel = String(startHour).padStart(2, '0') + ':00';
+            const endLabel = String(endHour).padStart(2, '0') + ':00';
+            document.getElementById('selected-range-label').innerText = `📅 ${displayDate} (${startLabel} ~ ${endLabel}) - 총 ${STATE.filteredForecasts.length}개 시간대 예보`;
+        }
+
+        function renderWeatherTable() {
+            const wrapper = document.getElementById('weather-table-wrapper');
+            const tbody = document.getElementById('weather-tbody');
+            tbody.innerHTML = '';
+            wrapper.classList.remove('hidden');
+
+            if (STATE.filteredForecasts.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-500 font-medium">
+                            ⚠️ 선택하신 날짜와 시간대에 해당하는 기상청 예보 데이터가 없습니다.<br>
+                            <span class="text-xs text-slate-400">날짜(오늘~3일 이내)나 시간 범위를 조정해 보세요.</span>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            STATE.filteredForecasts.forEach(f => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50/70 transition";
+
+                const formattedDate = `${f.fcstDate.substring(0,4)}-${f.fcstDate.substring(4,6)}-${f.fcstDate.substring(6,8)}`;
+                const hourDisplay = `${f.fcstTime.substring(0, 2)}:00`;
+                
+                const tempDisplay = f.TMP !== null ? `${f.TMP}℃` : '<span class="text-slate-400 italic">정보 없음</span>';
+                const popDisplay = f.POP !== null ? `${f.POP}%` : '<span class="text-slate-400 italic">정보 없음</span>';
+                const wsdDisplay = f.WSD !== null ? `${f.WSD}m/s` : '<span class="text-slate-400 italic">정보 없음</span>';
+                const rehDisplay = f.REH !== null ? `${f.REH}%` : '<span class="text-slate-400 italic">정보 없음</span>';
+                
+                const skyText = getSkyText(f.SKY);
+                const ptyText = getPtyText(f.PTY);
+
+                tr.innerHTML = `
+                    <td class="px-4 py-3.5 font-bold text-brand-700">${formattedDate} ${hourDisplay}</td>
+                    <td class="px-4 py-3.5 font-bold text-slate-900">${tempDisplay}</td>
+                    <td class="px-4 py-3.5 font-bold text-blue-700">${popDisplay}</td>
+                    <td class="px-4 py-3.5 font-medium">${wsdDisplay}</td>
+                    <td class="px-4 py-3.5 font-medium">${rehDisplay}</td>
+                    <td class="px-4 py-3.5">${skyText}</td>
+                    <td class="px-4 py-3.5">${ptyText}</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        function selectSport(sportName) {
+            const buttons = document.querySelectorAll('.sport-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active', 'bg-brand-600', 'border-brand-600', 'text-white', 'shadow-md');
+                btn.classList.add('bg-slate-50', 'border-slate-200', 'text-slate-800');
+            });
+            
+            const eventTarget = event.currentTarget;
+            eventTarget.classList.remove('bg-slate-50', 'border-slate-200', 'text-slate-800');
+            eventTarget.classList.add('active', 'bg-brand-600', 'border-brand-600', 'text-white', 'shadow-md');
+
+            const customWrapper = document.getElementById('custom-sport-wrapper');
+            if (sportName === 'custom') {
+                customWrapper.classList.remove('hidden');
+                STATE.selectedSport = document.getElementById('custom-sport-input').value.trim() || '직접 입력 운동';
+                STATE.currentConditions = SPORT_PRESETS['custom'];
+            } else {
+                customWrapper.classList.add('hidden');
+                STATE.selectedSport = sportName;
+                STATE.currentConditions = SPORT_PRESETS[sportName] || SPORT_PRESETS['custom'];
+            }
+
+            document.getElementById('sport-preset-summary').innerText = STATE.currentConditions.label;
+            evaluateSportSuitability();
+        }
+
+        document.getElementById('custom-sport-input')?.addEventListener('input', (e) => {
+            STATE.selectedSport = e.target.value.trim() || '직접 입력 운동';
+            evaluateSportSuitability();
+        });
+
+        function evaluateSportSuitability() {
+            const container = document.getElementById('evaluation-list-container');
+            const badge = document.getElementById('evaluation-count-badge');
+            container.innerHTML = '';
+
+            if (STATE.filteredForecasts.length === 0) {
+                badge.innerText = "조회된 날씨 없음";
+                container.innerHTML = `
+                    <div class="text-center py-10 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold">
+                        선택하신 날짜/시간대에 대한 예보 정보가 없습니다. 상단에서 시간대를 변경하거나 [날씨 가져오기]를 눌러주세요.
+                    </div>
+                `;
+                return;
+            }
+
+            const cond = STATE.currentConditions;
+            let goodCount = 0;
+
+            STATE.filteredForecasts.forEach(f => {
+                const hourNum = parseInt(f.fcstTime.substring(0, 2));
+                const ampmStr = hourNum < 12 ? `오전 ${hourNum}시` : `오후 ${hourNum === 12 ? 12 : hourNum - 12}시`;
+                const formattedDate = `${f.fcstDate.substring(0,4)}-${f.fcstDate.substring(4,6)}-${f.fcstDate.substring(6,8)}`;
+
+                if (f.TMP === null || f.POP === null || f.WSD === null || f.PTY === null) {
+                    const card = createEvaluationCard(formattedDate, ampmStr, false, "판단 불가 (날씨 데이터 누락)", f);
+                    container.appendChild(card);
+                    return;
+                }
+
+                const temp = parseFloat(f.TMP);
+                const pop = parseFloat(f.POP);
+                const wsd = parseFloat(f.WSD);
+                const pty = parseInt(f.PTY);
+
+                const tempOk = (temp >= cond.minTemp && temp <= cond.maxTemp);
+                const popOk = (pop <= cond.maxPop);
+                const wsdOk = (wsd <= cond.maxWsd);
+                const ptyOk = cond.excludeRain ? (pty === 0) : true;
+
+                const isGood = tempOk && popOk && wsdOk && ptyOk;
+                if (isGood) goodCount++;
+
+                let reasonText = "";
+                if (isGood) {
+                    reasonText = `기온 ${temp}℃, 강수확률 ${pop}%, 풍속 ${wsd}m/s로 ${STATE.selectedSport} 하기 딱 좋은 날씨입니다!`;
+                } else {
+                    const failReasons = [];
+                    if (!tempOk) failReasons.push(`기온(${temp}℃) 추천범위[${cond.minTemp}~${cond.maxTemp}℃] 벗어남`);
+                    if (!popOk) failReasons.push(`강수확률(${pop}%) 높음`);
+                    if (!wsdOk) failReasons.push(`강풍(${wsd}m/s)`);
+                    if (!ptyOk) failReasons.push(`강수예보(${getPtyText(f.PTY)})`);
+                    reasonText = failReasons.join(', ') + ' 사유로 적합하지 않습니다.';
+                }
+
+                const card = createEvaluationCard(formattedDate, ampmStr, isGood, reasonText, f);
+                container.appendChild(card);
+            });
+
+            badge.className = goodCount > 0 
+                ? "text-xs font-bold px-3 py-1 rounded-full bg-emerald-600 text-white shadow-sm"
+                : "text-xs font-bold px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300";
+            badge.innerText = `총 ${goodCount}개 시각 추천 적합`;
+        }
+
+        function createEvaluationCard(formattedDate, ampmStr, isGood, reasonText, forecast) {
+            const card = document.createElement('div');
+            card.className = isGood
+                ? "bg-emerald-50/90 border-2 border-emerald-400 p-5 rounded-2xl transition shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                : "bg-rose-50/70 border border-rose-200 p-5 rounded-2xl transition flex flex-col md:flex-row md:items-center justify-between gap-4";
+
+            const badgeHtml = isGood
+                ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-600 text-white shadow-sm">
+                    🟢 ${STATE.selectedSport} 하기 좋은 시간입니다! 👍
+                   </span>`
+                : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-600 text-white shadow-sm">
+                    🔴 ${STATE.selectedSport} 에 적합하지 않은 시간입니다 ⚠️
+                   </span>`;
+
+            card.innerHTML = `
+                <div class="space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-base font-black text-slate-900">${formattedDate} ${ampmStr}</span>
+                        ${badgeHtml}
+                    </div>
+                    <p class="text-sm font-semibold text-slate-800">
+                        기온 <strong class="text-brand-900">${forecast.TMP ?? '-'}℃</strong> | 
+                        강수확률 <strong class="text-brand-900">${forecast.POP ?? '-'}%</strong> | 
+                        풍속 <strong class="text-brand-900">${forecast.WSD ?? '-'}m/s</strong> | 
+                        하늘 <strong class="text-brand-900">${getSkyText(forecast.SKY)}</strong>
+                    </p>
+                    <p class="text-xs font-bold ${isGood ? 'text-emerald-800' : 'text-rose-800'}">
+                        💡 ${reasonText}
+                    </p>
+                </div>
+                <button onclick="selectPlanTime('${forecast.fcstDate}', '${forecast.fcstTime}', '${forecast.TMP}', '${forecast.POP}', '${forecast.WSD}')" class="${isGood ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-700 hover:bg-slate-800'} text-white font-black text-xs px-5 py-3 rounded-xl transition shadow-md whitespace-nowrap self-start md:self-auto">
+                    이 시간으로 운동 확정
+                </button>
+            `;
+            return card;
+        }
+
+        function selectPlanTime(dateStr, timeStr, temp, pop, wsd) {
+            const hourNum = parseInt(timeStr.substring(0, 2));
+            const ampmStr = hourNum < 12 ? `오전 ${hourNum}시` : `오후 ${hourNum === 12 ? 12 : hourNum - 12}시`;
+            const formattedDate = `${dateStr.substring(0,4)}-${dateStr.substring(4,6)}-${dateStr.substring(6,8)}`;
+
+            STATE.selectedPlan = {
+                location: STATE.selectedLocation,
+                sport: STATE.selectedSport,
+                dateTimeStr: `${formattedDate} ${ampmStr} (${timeStr.substring(0,2)}:00)`,
+                temp, pop, wsd,
+                conditions: STATE.currentConditions.label
+            };
+
+            document.getElementById('plan-sport-name').innerText = STATE.selectedPlan.sport;
+            document.getElementById('plan-location-name').innerText = STATE.selectedPlan.location;
+            document.getElementById('plan-datetime').innerText = STATE.selectedPlan.dateTimeStr;
+            document.getElementById('plan-temp').innerText = `${temp}℃`;
+            document.getElementById('plan-pop').innerText = `${pop}%`;
+            document.getElementById('plan-wsd').innerText = `${wsd}m/s`;
+            document.getElementById('plan-conditions-text').innerText = STATE.selectedPlan.conditions;
+
+            const planSection = document.getElementById('selected-plan-section');
+            planSection.classList.remove('hidden');
+            planSection.scrollIntoView({ behavior: 'smooth' });
+
+            showToast("운동 시간 선택이 완료되었습니다!");
+        }
+
+        function cancelSelectedPlan() {
+            STATE.selectedPlan = null;
+            document.getElementById('selected-plan-section').classList.add('hidden');
+            showToast("운동 계획 선택이 취소되었습니다.");
+        }
+
+        function copyPlanSummary() {
+            if (!STATE.selectedPlan) return;
+
+            const p = STATE.selectedPlan;
+            const summaryText = `[SPORTS PLANNER 운동 계획]\n- 장소: ${p.location}\n- 종목: ${p.sport}\n- 일시: ${p.dateTimeStr}\n- 해당 시각 예보: 기온 ${p.temp}℃ / 강수확률 ${p.pop}% / 풍속 ${p.wsd}m/s\n- 날씨 추천 기준: ${p.conditions}\n\n* 본 계획은 기상청 예보 데이터를 기반으로 작성되었습니다. 출발 전 실제 날씨를 꼭 확인하세요!`;
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(summaryText).then(() => {
+                    showToast("📋 운동 계획 요약이 클립보드에 복사되었습니다!");
+                }).catch(() => {
+                    fallbackCopyText(summaryText);
+                });
+            } else {
+                fallbackCopyText(summaryText);
+            }
+        }
+
+        function fallbackCopyText(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast("📋 운동 계획 요약이 복사되었습니다!");
+            } catch (err) {
+                showToast("복사 실패했습니다.");
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function renderRawData(baseTimeStr, statusStr) {
+            document.getElementById('raw-loc').innerText = STATE.selectedLocation;
+            document.getElementById('raw-grid').innerText = `nx=${STATE.gridNx}, ny=${STATE.gridNy}`;
+            document.getElementById('raw-basetime').innerText = baseTimeStr;
+            document.getElementById('raw-status').innerText = statusStr;
+
+            if (STATE.rawApiResponse && STATE.rawApiResponse.response?.body?.items?.item) {
+                const sampleItems = STATE.rawApiResponse.response.body.items.item.slice(0, 10);
+                const sampleJson = {
+                    info: "전체 항목 중 샘플 10개 예시",
+                    items: sampleItems
+                };
+                document.getElementById('raw-json').innerText = JSON.stringify(sampleJson, null, 2);
+            } else {
+                document.getElementById('raw-json').innerText = "데이터 원본이 없습니다.";
+            }
+        }
+
+        function toggleRawDataAccordion() {
+            const panel = document.getElementById('raw-data-panel');
+            const icon = document.getElementById('raw-accordion-icon');
+            panel.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        }
+
+        function updateStatusBanner(type, message) {
+            const container = document.getElementById('status-container');
+            container.className = "rounded-xl p-5 border text-sm font-semibold transition-all ";
+
+            let iconHtml = '';
+            if (type === 'before') {
+                container.classList.add('bg-slate-50', 'border-slate-200', 'text-slate-700');
+                iconHtml = `<svg class="w-5 h-5 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (type === 'loading') {
+                container.classList.add('bg-blue-50', 'border-brand-200', 'text-brand-900');
+                iconHtml = `<svg class="w-5 h-5 text-brand-600 animate-spin flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>`;
+            } else if (type === 'success') {
+                container.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-900');
+                iconHtml = `<svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+            } else if (type === 'error') {
+                container.classList.add('bg-rose-50', 'border-rose-200', 'text-rose-900');
+                iconHtml = `<svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            container.innerHTML = `
+                <div class="flex items-start gap-3">
+                    ${iconHtml}
+                    <div class="flex-1">${message}</div>
+                </div>
+            `;
+        }
+
+        function updateBadge(status, customBaseTime) {
+            const badge = document.getElementById('data-source-badge');
+            const nowStr = new Date().toLocaleTimeString('ko-KR');
+            document.getElementById('info-fetch-time').innerText = nowStr;
+
+            if (status === 'STANDBY') {
+                badge.className = "self-start md:self-auto px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand-800 text-blue-100 border border-brand-700 flex items-center gap-2";
+                badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-slate-400"></span><span>조회 대기 중</span>`;
+            } else if (status === 'LOADING') {
+                badge.className = "self-start md:self-auto px-3.5 py-1.5 rounded-lg text-xs font-bold bg-brand-800 text-lime-300 border border-brand-700 flex items-center gap-2";
+                badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-lime-400 animate-ping"></span><span>기상청 API 요청 중...</span>`;
+            } else if (status === 'REAL_SUCCESS') {
+                badge.className = "self-start md:self-auto px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-700 text-white border border-emerald-500 flex items-center gap-2 shadow-sm";
+                badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-lime-300"></span><span>기상청 실제 데이터 연결됨</span>`;
+                const latest = customBaseTime || getLatestBaseDateTime().formattedTime;
+                document.getElementById('info-base-time').innerText = `${latest}`;
+            } else if (status === 'FAILED') {
+                badge.className = "self-start md:self-auto px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-600 text-white border border-rose-500 flex items-center gap-2";
+                badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-white"></span><span>조회 실패</span>`;
+            }
+        }
+
+        function getSkyText(skyCode) {
+            if (skyCode === '1') return '<span class="text-amber-600 font-bold">☀️ 맑음</span>';
+            if (skyCode === '3') return '<span class="text-blue-600 font-bold">⛅ 구름많음</span>';
+            if (skyCode === '4') return '<span class="text-slate-600 font-bold">☁️ 흐림</span>';
+            return '<span class="text-slate-400 italic">정보 없음</span>';
+        }
+
+        function getPtyText(ptyCode) {
+            if (ptyCode === '0') return '<span class="text-slate-600">없음</span>';
+            if (ptyCode === '1') return '<span class="text-blue-600 font-bold">🌧️ 비</span>';
+            if (ptyCode === '2') return '<span class="text-indigo-600 font-bold">🌧️❄️ 비/눈</span>';
+            if (ptyCode === '3') return '<span class="text-sky-600 font-bold">❄️ 눈</span>';
+            if (ptyCode === '4') return '<span class="text-blue-700 font-bold">🌦️ 소나기</span>';
+            return '<span class="text-slate-400 italic">정보 없음</span>';
+        }
+
+        function getFormattedDateOffset(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${yyyy}${mm}${dd}`;
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
