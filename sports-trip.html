@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚽ 제주 체육시설 도장깨기 🏀</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts (Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Kakao Maps API with Services library -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_JAVASCRIPT_KEY&libraries=services&autoload=false"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+        }
+        .custom-overlay {
+            position: relative;
+            bottom: 15px;
+            border-radius: 8px;
+            float: left;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">🔥</span>
+                <h1 class="text-xl font-extrabold tracking-tight">제주 스포트립 <span class="text-amber-300 text-sm font-semibold">도장깨기</span></h1>
+            </div>
+            <div class="flex items-center space-x-3 text-sm">
+                <div class="bg-indigo-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 font-bold border border-indigo-500">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span id="userLV">Lv.1 스포츠 유망주</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col lg:flex-row gap-4">
+        
+        <!-- Left Side: Map & Interactive Zone -->
+        <section class="flex-1 flex flex-col gap-4">
+            
+            <!-- Dashboard / Status Bar -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                        <i class="fa-solid fa-location-dot text-2xl text-indigo-600"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-slate-400">나의 점령 현황</div>
+                        <div class="text-lg font-extrabold text-slate-800">
+                            <span id="stampedCount" class="text-indigo-600">0</span> / <span id="totalPlacesCount">0</span> 곳 점령 완료!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full md:w-48 bg-slate-100 rounded-full h-3.5 overflow-hidden border border-slate-200">
+                    <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-emerald-400 h-full w-0% transition-all duration-500"></div>
+                </div>
+
+                <!-- Add Spot Action Button -->
+                <button onclick="openAddSpotModal()" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-plus-circle"></i> ➕ 운동 스팟 추가
+                </button>
+            </div>
+
+            <!-- Category Filter Buttons -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" id="filterContainer">
+                <button onclick="filterCategory('ALL')" class="cat-btn active bg-indigo-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm whitespace-nowrap transition">전체보기</button>
+                <button onclick="filterCategory('축구장')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">⚽ 축구장</button>
+                <button onclick="filterCategory('농구장')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">🏀 농구장</button>
+                <button onclick="filterCategory('풋살')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">👟 풋살장</button>
+                <button onclick="filterCategory('족구장')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">🏐 족구장</button>
+                <button onclick="filterCategory('체육공원')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">🌳 체육공원</button>
+                <button onclick="filterCategory('종합경기장')" class="cat-btn bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm whitespace-nowrap transition">🏟️ 종합경기장</button>
+            </div>
+
+            <!-- Central Jeju Island Map Container -->
+            <div class="relative w-full h-[520px] lg:h-[600px] bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 group">
+                <!-- Map Header Overlay -->
+                <div class="absolute top-3 left-3 z-20 flex items-center gap-2">
+                    <button onclick="recenterMap()" class="bg-white/95 hover:bg-white text-slate-800 text-xs font-extrabold px-3.5 py-2 rounded-xl shadow-lg border border-slate-200/80 backdrop-blur-md flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fa-solid fa-compass text-indigo-600 text-sm"></i> 제주도 전체 중심
+                    </button>
+                    <span class="bg-slate-900/80 text-amber-300 text-[11px] font-bold px-3 py-2 rounded-xl backdrop-blur-md border border-slate-700 hidden sm:inline-block">
+                        🗺️ 제주 특별자치도 체육시설 맵
+                    </span>
+                </div>
+
+                <div id="map" class="w-full h-full bg-slate-100"></div>
+
+                <!-- Fallback Dynamic Interactive Map Canvas when Map API key is domain restricted -->
+                <div id="fallbackCanvasMap" class="hidden absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-10 flex flex-col justify-between p-4 text-white">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="text-xs font-bold text-indigo-300 bg-indigo-900/60 px-3 py-1.5 rounded-lg border border-indigo-500/30">
+                            🌴 제주도 체육 인터랙티브 지형도
+                        </span>
+                        <span class="text-[11px] text-slate-400">클릭 시 상세 위치 및 길찾기 연결</span>
+                    </div>
+
+                    <!-- SVG Map Visualizer of Jeju Island -->
+                    <div class="relative w-full h-full flex items-center justify-center my-2 overflow-hidden">
+                        <svg viewBox="0 0 800 500" class="w-full h-full max-h-[480px] drop-shadow-2xl">
+                            <!-- Jeju Island Outline -->
+                            <path d="M 120 280 C 180 180, 320 150, 480 160 C 640 170, 720 220, 710 290 C 700 360, 580 400, 420 410 C 260 420, 140 370, 120 280 Z" 
+                                  fill="#1e293b" stroke="#38bdf8" stroke-width="3" opacity="0.9" />
+                            <!-- Hallasan Mountain Marker -->
+                            <circle cx="420" cy="280" r="35" fill="#0369a1" opacity="0.4" />
+                            <circle cx="420" cy="280" r="10" fill="#f59e0b" />
+                            <text x="420" y="310" text-anchor="middle" fill="#fcd34d" font-size="12" font-weight="800">🌋 한라산</text>
+                            
+                            <!-- Key Regions -->
+                            <text x="410" y="190" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="800">제주시 🌊</text>
+                            <text x="410" y="370" text-anchor="middle" fill="#93c5fd" font-size="14" font-weight="800">서귀포시 🍊</text>
+                        </svg>
+
+                        <!-- Dynamically Placed Spot Overlay Pins -->
+                        <div id="svgSpotsOverlay" class="absolute inset-0 pointer-events-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Map Notice Bar -->
+                <div id="mapNotice" class="hidden absolute bottom-3 left-3 right-3 bg-slate-900/95 text-white text-xs px-4 py-3 rounded-xl shadow-xl backdrop-blur-md z-20 flex items-center justify-between border border-slate-700">
+                    <span id="mapNoticeText"><i class="fa-solid fa-circle-info mr-1.5 text-amber-400"></i> 제주시 및 서귀포시 체육시설 지도를 불러오고 있습니다...</span>
+                    <button onclick="document.getElementById('mapNotice').classList.add('hidden')" class="text-slate-400 hover:text-white text-base">✕</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side: Facility List & Leaderboard Panel -->
+        <section class="w-full lg:w-96 flex flex-col gap-4">
+            
+            <!-- Facility List Container -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[500px]">
+                <!-- Panel Header -->
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
+                    <h2 class="font-extrabold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-indigo-600"></i> 제주 체육시설 리스트
+                    </h2>
+                    <span id="listCountBadge" class="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">0곳</span>
+                </div>
+
+                <!-- Search Input -->
+                <div class="p-3 border-b border-slate-100">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="시설명 또는 지역 검색 (예: 애월, 농구장)..." 
+                               class="w-full pl-9 pr-3 py-2 bg-slate-100 border-none rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
+                    </div>
+                </div>
+
+                <!-- Scrollable Items List -->
+                <div id="placeList" class="flex-1 overflow-y-auto p-3 space-y-2.5">
+                    <!-- Cards will be populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Achievement Badges Card -->
+            <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-sm relative overflow-hidden">
+                <div class="relative z-10">
+                    <h3 class="font-extrabold text-sm text-amber-400 flex items-center gap-1.5 mb-2">
+                        <i class="fa-solid fa-medal"></i> 중2 도장깨기 배지 업적
+                    </h3>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs mt-3">
+                        <div class="bg-white/10 p-2 rounded-xl backdrop-blur-sm border border-white/10 flex flex-col items-center">
+                            <span class="text-2xl mb-1">🐣</span>
+                            <span class="text-[10px] text-slate-300 font-medium">첫 도장</span>
+                        </div>
+                        <div id="badgeFutsal" class="bg-white/5 opacity-50 p-2 rounded-xl backdrop-blur-sm border border-white/5 flex flex-col items-center">
+                            <span class="text-2xl mb-1">⚽</span>
+                            <span class="text-[10px] text-slate-300 font-medium">축구왕</span>
+                        </div>
+                        <div id="badgeBasketball" class="bg-white/5 opacity-50 p-2 rounded-xl backdrop-blur-sm border border-white/5 flex flex-col items-center">
+                            <span class="text-2xl mb-1">🏀</span>
+                            <span class="text-[10px] text-slate-300 font-medium">슬램덩크</span>
+                        </div>
+                        <div id="badgeMaster" class="bg-white/5 opacity-50 p-2 rounded-xl backdrop-blur-sm border border-white/5 flex flex-col items-center">
+                            <span class="text-2xl mb-1">👑</span>
+                            <span class="text-[10px] text-slate-300 font-medium">제주 마스터</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Custom Modal Popup for Adding New Spot -->
+    <div id="addSpotModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all scale-95 opacity-0 duration-200" id="addSpotModalContent">
+            <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto text-2xl mb-3 shadow-inner">
+                <i class="fa-solid fa-map-pin"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800">새 운동 스팟 등록</h3>
+            <p class="text-xs text-slate-500 mt-1 mb-4">내가 발견한 제주도의 운동 시설을 추가해보세요!</p>
+            
+            <form onsubmit="handleAddNewSpot(event)" class="text-left space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">시설 이름 *</label>
+                    <input type="text" id="newSpotName" required placeholder="예: 삼양 야외 풋살장" class="w-full px-3 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">카테고리 *</label>
+                    <select id="newSpotCategory" class="w-full px-3 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700">
+                        <option value="축구장">⚽ 축구장</option>
+                        <option value="농구장">🏀 농구장</option>
+                        <option value="풋살">👟 풋살장</option>
+                        <option value="족구장">🏐 족구장</option>
+                        <option value="체육공원">🌳 체육공원</option>
+                        <option value="종합경기장">🏟️ 종합경기장</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-600 block mb-1">위치/주소 *</label>
+                    <input type="text" id="newSpotAddress" required placeholder="예: 제주시 삼양동 해안도로 부근" class="w-full px-3 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">위도 (Lat)</label>
+                        <input type="number" step="0.0001" id="newSpotLat" placeholder="33.4990" class="w-full px-3 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-bold text-slate-500 block mb-1">경도 (Lng)</label>
+                        <input type="number" step="0.0001" id="newSpotLng" placeholder="126.5312" class="w-full px-3 py-2 bg-slate-100 border-none rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400">* 위도/경도를 비워두시면 제주시 중심 좌표 근처로 자동 지정됩니다.</p>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeAddSpotModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold rounded-xl text-sm transition">취소</button>
+                    <button type="submit" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-sm shadow-md transition">➕ 스팟 저장</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Modal Popup for Stamp Certification -->
+    <div id="stampModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all scale-95 opacity-0 duration-200" id="modalContent">
+            <div class="w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mx-auto text-3xl mb-3 shadow-inner">
+                🏆
+            </div>
+            <h3 class="text-xl font-black text-slate-800" id="modalTitle">도장깨기 인증!</h3>
+            <p class="text-xs text-slate-500 mt-1" id="modalAddress">제주특별자치도 제주시</p>
+            
+            <div class="my-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="text-slate-400 font-bold">시설 카테고리</span>
+                    <span id="modalCategory" class="font-extrabold text-indigo-600">축구장</span>
+                </div>
+                <div class="flex justify-between text-xs">
+                    <span class="text-slate-400 font-bold">획득 경험치</span>
+                    <span class="font-extrabold text-emerald-600">+100 EXP</span>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold rounded-xl text-sm transition">닫기</button>
+                <button id="modalActionBtn" onclick="confirmStamp()" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-sm shadow-md transition">🚩 도장 찍기!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Message -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-sm font-bold px-5 py-3 rounded-2xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+        <span id="toastIcon">🎉</span>
+        <span id="toastMessage">도장이 성공적으로 찍혔습니다!</span>
+    </div>
+
+    <script>
+        // Target Filtering Keywords configured
+        const targetKeywords = ["축구장", "농구장", "족구장", "풋살장", "체육공원", "종합경기장", "풋살"];
+
+        // Curated Jeju Sports POI Data Sample (Sports Facilities across Jeju)
+        const initialPlacesData = [
+            { id: 1, name: "제주 종합경기장 주경기장", category: "종합경기장", lat: 33.4938, lng: 126.5130, address: "제주특별자치도 제주시 서광로2길 24" },
+            { id: 2, name: "이호테우 야외 농구장", category: "농구장", lat: 33.4981, lng: 126.4529, address: "제주특별자치도 제주시 이호일동 1665-13" },
+            { id: 3, name: "애월체육공원 풋살장", category: "풋살", lat: 33.4651, lng: 126.3312, address: "제주특별자치도 제주시 애월읍 애월리 1410" },
+            { id: 4, name: "서귀포 공천포전지훈련센터 축구장", category: "축구장", lat: 33.2685, lng: 126.6341, address: "제주특별자치도 서귀포시 남원읍 신례리 61" },
+            { id: 5, name: "한림체육공원 족구장", category: "족구장", lat: 33.4072, lng: 126.2621, address: "제주특별자치도 제주시 한림읍 한림리 1490" },
+            { id: 6, name: "함덕해수욕장 야외 농구장", category: "농구장", lat: 33.5431, lng: 126.6692, address: "제주특별자치도 제주시 조천읍 함덕리 1008" },
+            { id: 7, name: "표선생활체육관 풋살장", category: "풋살", lat: 33.3262, lng: 126.8309, address: "제주특별자치도 서귀포시 표선면 표선리 628" },
+            { id: 8, name: "중문성천체육공원 축구장", category: "축구장", lat: 33.2458, lng: 126.4251, address: "제주특별자치도 서귀포시 중문동 2110" },
+            { id: 9, name: "삼양체육공원 족구장", category: "족구장", lat: 33.5221, lng: 126.5861, address: "제주특별자치도 제주시 삼양삼동 2520" },
+            { id: 10, name: "서귀포 강창학종합경기장", category: "종합경기장", lat: 33.2612, lng: 126.5118, address: "제주특별자치도 서귀포시 중정로 102" }
+        ];
+
+        // Load custom user added spots from LocalStorage
+        let customPlaces = JSON.parse(localStorage.getItem('jeju_custom_sports_places') || '[]');
+        let sportsPlacesData = [...initialPlacesData, ...customPlaces];
+
+        // State Management
+        let map = null;
+        let markers = [];
+        let activeInfoWindow = null;
+        let currentFilter = 'ALL';
+        let stampedPlaceIds = JSON.parse(localStorage.getItem('jeju_sports_stamps') || '[]');
+        let selectedPlaceForStamp = null;
+
+        // Initialize Web App & Kakao Maps API via kakao.maps.load() per Kakao API Guide
+        window.onload = function() {
+            initKakaoMap();
+            applyFilters();
+            updateDashboard();
+        };
+
+        // Kakao Map Initialization following kakao.maps.load guide
+        function initKakaoMap() {
+            const container = document.getElementById('map');
+            
+            if (typeof kakao !== 'undefined' && kakao && kakao.maps) {
+                // Kakao SDK Autoload=false pattern as per official guide
+                kakao.maps.load(function() {
+                    try {
+                        const options = {
+                            center: new kakao.maps.LatLng(33.38, 126.55),
+                            level: 9
+                        };
+                        map = new kakao.maps.Map(container, options);
+
+                        // Add Zoom and MapType Control
+                        const zoomControl = new kakao.maps.ZoomControl();
+                        map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
+
+                        const mapTypeControl = new kakao.maps.MapTypeControl();
+                        map.addControl(mapTypeControl, kakao.maps.ControlPosition.TOPRIGHT);
+
+                        applyFilters();
+                    } catch (e) {
+                        console.warn("Kakao maps init error:", e);
+                        renderMapFallback(container);
+                    }
+                });
+            } else {
+                renderMapFallback(container);
+            }
+        }
+
+        function renderMapFallback(container) {
+            showMapNotice("제주도 전체 체육시설 인터랙티브 지도 모드로 구동 중입니다. 목록에서 [위치보기] 클릭 시 카카오맵으로 연결됩니다.");
+            const fallbackEl = document.getElementById('fallbackCanvasMap');
+            if (fallbackEl) {
+                fallbackEl.classList.remove('hidden');
+                renderSVGSpots();
+            }
+        }
+
+        // Render Markers on Kakao Map
+        function displayMarkers(places) {
+            if (!map) return;
+
+            // Clear previous markers
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+
+            if (activeInfoWindow) {
+                activeInfoWindow.close();
+            }
+
+            places.forEach(place => {
+                const markerPosition = new kakao.maps.LatLng(place.lat, place.lng);
+                const isStamped = stampedPlaceIds.includes(place.id);
+
+                const marker = new kakao.maps.Marker({
+                    position: markerPosition,
+                    map: map
+                });
+
+                const content = `
+                    <div style="padding: 12px; min-width: 170px; text-align: center; border-radius: 12px;">
+                        <div style="font-size: 11px; font-weight: 800; color: #4f46e5;">${place.category}</div>
+                        <div style="font-size: 13px; font-weight: 800; color: #1e293b; margin-top:2px; margin-bottom: 8px;">${place.name}</div>
+                        <button onclick="openStampModal(${place.id})" style="background: ${isStamped ? '#10b981' : '#4f46e5'}; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer;">
+                            ${isStamped ? '✅ 점령 완료' : '🚩 도장 찍기'}
+                        </button>
+                    </div>
+                `;
+
+                const infowindow = new kakao.maps.InfoWindow({
+                    content: content,
+                    removable: true
+                });
+
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    if (activeInfoWindow) activeInfoWindow.close();
+                    infowindow.open(map, marker);
+                    activeInfoWindow = infowindow;
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        // Render Spots on the SVG Map Overview
+        function renderSVGSpots() {
+            const container = document.getElementById('svgSpotsOverlay');
+            if (!container) return;
+
+            const filtered = getFilteredData();
+            container.innerHTML = filtered.map(place => {
+                const topPct = Math.max(15, Math.min(80, (1 - (place.lat - 33.22) / 0.33) * 100));
+                const leftPct = Math.max(15, Math.min(85, ((place.lng - 126.22) / 0.72) * 100));
+                const isStamped = stampedPlaceIds.includes(place.id);
+
+                return `
+                    <div style="top: ${topPct}%; left: ${leftPct}%;" 
+                         onclick="panToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')"
+                         class="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group/pin z-30">
+                        <div class="relative flex flex-col items-center">
+                            <div class="${isStamped ? 'bg-emerald-500' : 'bg-indigo-600'} text-white text-[11px] font-black px-2 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1 hover:scale-125 transition transform">
+                                <span>${getCategoryIcon(place.category)}</span>
+                                <span class="hidden sm:inline max-w-[80px] truncate">${place.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Category Icon Mapping
+        function getCategoryIcon(category) {
+            if (category.includes('축구')) return '⚽';
+            if (category.includes('농구')) return '🏀';
+            if (category.includes('풋살')) return '👟';
+            if (category.includes('족구')) return '🏐';
+            if (category.includes('체육공원')) return '🌳';
+            return '🏟️';
+        }
+
+        // Filtering logic
+        function filterCategory(cat) {
+            currentFilter = cat;
+
+            // UI active button state
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white', 'active');
+                btn.classList.add('bg-white', 'text-slate-600');
+            });
+
+            const activeBtn = event ? event.currentTarget : null;
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-600');
+                activeBtn.classList.add('bg-indigo-600', 'text-white', 'active');
+            }
+
+            applyFilters();
+        }
+
+        function getFilteredData() {
+            const searchKeyword = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+            return sportsPlacesData.filter(place => {
+                const matchCategory = currentFilter === 'ALL' || place.category.includes(currentFilter) || (currentFilter === '풋살' && place.category.includes('풋살'));
+                const matchSearch = place.name.toLowerCase().includes(searchKeyword) || 
+                                    place.address.toLowerCase().includes(searchKeyword) ||
+                                    place.category.toLowerCase().includes(searchKeyword);
+                return matchCategory && matchSearch;
+            });
+        }
+
+        function applyFilters() {
+            const filtered = getFilteredData();
+
+            renderPlacesList(filtered);
+            displayMarkers(filtered);
+            renderSVGSpots();
+        }
+
+        function handleSearch() {
+            applyFilters();
+        }
+
+        // Render List Panel
+        function renderPlacesList(data) {
+            const listEl = document.getElementById('placeList');
+            document.getElementById('listCountBadge').innerText = `${data.length}곳`;
+
+            if (data.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-400 text-xs">
+                        <i class="fa-solid fa-ghost text-2xl mb-2 text-slate-300"></i><br>
+                        검색 조건에 맞는 체육시설이 없습니다.
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = data.map(place => {
+                const isStamped = stampedPlaceIds.includes(place.id);
+                const icon = getCategoryIcon(place.category);
+
+                return `
+                    <div class="p-3.5 bg-white hover:bg-indigo-50/50 rounded-2xl border ${isStamped ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-100'} shadow-sm transition flex flex-col gap-2">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">${icon}</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-xs">${place.name}</h4>
+                                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">${place.category}</span>
+                                    ${place.isCustom ? '<span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md ml-1">직접추가</span>' : ''}
+                                </div>
+                            </div>
+                            <button onclick="openStampModal(${place.id})" class="${isStamped ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-indigo-600 hover:bg-indigo-700'} text-white text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow transition">
+                                ${isStamped ? '✅ 완료' : '🚩 인증'}
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 truncate"><i class="fa-solid fa-location-dot mr-1"></i>${place.address}</p>
+                        <div class="flex gap-1.5 mt-1 pt-2 border-t border-slate-100/80">
+                            <button onclick="panToPlace(${place.lat}, ${place.lng}, '${place.name.replace(/'/g, "\\'")}')" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold py-1.5 rounded-lg transition text-center">
+                                📍 위치보기
+                            </button>
+                            ${place.isCustom ? `<button onclick="deleteCustomSpot(${place.id})" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition">삭제</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Pan Map or Kakao Map Link
+        function panToPlace(lat, lng, name) {
+            if (map) {
+                const moveLatLon = new kakao.maps.LatLng(lat, lng);
+                map.panTo(moveLatLon);
+                showToast(`📍 '${name}' 위치로 이동했습니다.`);
+            } else {
+                const kakaoMapUrl = `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`;
+                window.open(kakaoMapUrl, '_blank');
+                showToast(`🧭 '${name}' 카카오 지도 페이지로 연결되었습니다.`);
+            }
+        }
+
+        function recenterMap() {
+            if (map) {
+                map.setCenter(new kakao.maps.LatLng(33.38, 126.55));
+                map.setLevel(9);
+                showToast("🗺️ 제주도 전체 지도 중심으로 이동했습니다.");
+            }
+        }
+
+        function showMapNotice(msg) {
+            const noticeBox = document.getElementById('mapNotice');
+            const noticeText = document.getElementById('mapNoticeText');
+            if (noticeBox && noticeText) {
+                noticeText.innerHTML = `<i class="fa-solid fa-circle-info mr-1.5 text-amber-400"></i> ${msg}`;
+                noticeBox.classList.remove('hidden');
+            }
+        }
+
+        // Add Spot Modal Handlers
+        function openAddSpotModal() {
+            const modal = document.getElementById('addSpotModal');
+            const content = document.getElementById('addSpotModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeAddSpotModal() {
+            const modal = document.getElementById('addSpotModal');
+            const content = document.getElementById('addSpotModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function handleAddNewSpot(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('newSpotName').value.trim();
+            const category = document.getElementById('newSpotCategory').value;
+            const address = document.getElementById('newSpotAddress').value.trim();
+            let lat = parseFloat(document.getElementById('newSpotLat').value);
+            let lng = parseFloat(document.getElementById('newSpotLng').value);
+
+            if (isNaN(lat)) lat = 33.4996 + (Math.random() - 0.5) * 0.05;
+            if (isNaN(lng)) lng = 126.5312 + (Math.random() - 0.5) * 0.05;
+
+            const newSpot = {
+                id: Date.now(),
+                name: name,
+                category: category,
+                address: address,
+                lat: lat,
+                lng: lng,
+                isCustom: true
+            };
+
+            customPlaces.push(newSpot);
+            localStorage.setItem('jeju_custom_sports_places', JSON.stringify(customPlaces));
+
+            sportsPlacesData = [...initialPlacesData, ...customPlaces];
+
+            applyFilters();
+            updateDashboard();
+            closeAddSpotModal();
+
+            document.getElementById('newSpotName').value = '';
+            document.getElementById('newSpotAddress').value = '';
+            document.getElementById('newSpotLat').value = '';
+            document.getElementById('newSpotLng').value = '';
+
+            showToast(`✨ 새로운 스팟 '${name}'이(가) 성공적으로 추가되었습니다!`);
+        }
+
+        function deleteCustomSpot(id) {
+            if (!confirm('이 스팟을 정말 삭제하시겠습니까?')) return;
+
+            customPlaces = customPlaces.filter(p => p.id !== id);
+            localStorage.setItem('jeju_custom_sports_places', JSON.stringify(customPlaces));
+
+            const stampIdx = stampedPlaceIds.indexOf(id);
+            if (stampIdx > -1) {
+                stampedPlaceIds.splice(stampIdx, 1);
+                localStorage.setItem('jeju_sports_stamps', JSON.stringify(stampedPlaceIds));
+            }
+
+            sportsPlacesData = [...initialPlacesData, ...customPlaces];
+
+            applyFilters();
+            updateDashboard();
+            showToast('🗑️ 스팟이 삭제되었습니다.');
+        }
+
+        // Open Stamp Modal
+        function openStampModal(placeId) {
+            const place = sportsPlacesData.find(p => p.id === placeId);
+            if (!place) return;
+
+            selectedPlaceForStamp = place;
+            const isStamped = stampedPlaceIds.includes(place.id);
+
+            document.getElementById('modalTitle').innerText = place.name;
+            document.getElementById('modalAddress').innerText = place.address;
+            document.getElementById('modalCategory').innerText = place.category;
+
+            const actionBtn = document.getElementById('modalActionBtn');
+            if (isStamped) {
+                actionBtn.innerText = '도장 취소하기';
+                actionBtn.className = 'flex-1 py-3 bg-rose-500 hover:bg-rose-600 text-white font-extrabold rounded-xl text-sm transition';
+            } else {
+                actionBtn.innerText = '🚩 도장 찍기!';
+                actionBtn.className = 'flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-sm shadow-md transition';
+            }
+
+            const modal = document.getElementById('stampModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('stampModal');
+            const content = document.getElementById('modalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function confirmStamp() {
+            if (!selectedPlaceForStamp) return;
+
+            const placeId = selectedPlaceForStamp.id;
+            const index = stampedPlaceIds.indexOf(placeId);
+
+            if (index > -1) {
+                stampedPlaceIds.splice(index, 1);
+                showToast(`🚫 '${selectedPlaceForStamp.name}' 도장이 취소되었습니다.`);
+            } else {
+                stampedPlaceIds.push(placeId);
+                showToast(`🎉 '${selectedPlaceForStamp.name}' 도장깨기 성공! (+100 EXP)`);
+            }
+
+            localStorage.setItem('jeju_sports_stamps', JSON.stringify(stampedPlaceIds));
+
+            updateDashboard();
+            applyFilters();
+            closeModal();
+        }
+
+        function updateDashboard() {
+            const count = stampedPlaceIds.length;
+            const total = sportsPlacesData.length;
+            const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+
+            document.getElementById('stampedCount').innerText = count;
+            document.getElementById('totalPlacesCount').innerText = total;
+            document.getElementById('progressBar').style.width = `${percentage}%`;
+
+            let levelTitle = "Lv.1 스포츠 유망주";
+            if (count >= 3) levelTitle = "Lv.2 동네 체육관 스타 🌟";
+            if (count >= 6) levelTitle = "Lv.3 제주 도장깨기 마스터 🏆";
+            if (count >= 10) levelTitle = "Lv.4 전설의 체육왕 👑";
+
+            document.getElementById('userLV').innerText = levelTitle;
+
+            if (count >= 3) document.getElementById('badgeFutsal').classList.remove('opacity-50', 'bg-white/5');
+            if (count >= 6) document.getElementById('badgeBasketball').classList.remove('opacity-50', 'bg-white/5');
+            if (count >= 10) document.getElementById('badgeMaster').classList.remove('opacity-50', 'bg-white/5');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
